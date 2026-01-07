@@ -10,7 +10,7 @@ type KickHandlerDataMap = {
 }
 
 export const kickHandlers: SubTypeHandlerMap<KickHandlerDataMap> = {
-  vote (socket, data: KickVoteData) {
+  vote(socket, data: KickVoteData) {
     // 강퇴 투표
-  }
+  },
 }

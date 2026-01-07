@@ -7,7 +7,7 @@ type GameHandlerDataMap = {
 }
 
 export const gameHandlers: SubTypeHandlerMap<GameHandlerDataMap> = {
-  start (socket, data: GameStartData) {
+  start(socket, data: GameStartData) {
     // 게임 시작하기
-  }
+  },
 }

@@ -17,5 +17,5 @@ export const handlers: MainTypeHandlerMap = {
   draw: drawHandlers,
   chat: chatHandlers,
   game: gameHandlers,
-  room: roomHandlers
+  room: roomHandlers,
 }

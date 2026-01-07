@@ -6,4 +6,6 @@ export type SubTypeHandlerMap<T extends Record<string, unknown> = Record<string,
   [K in keyof T]: WSHandler
 }
 
-export type MainTypeHandlerMap<T extends Record<string, SubTypeHandlerMap> = Record<string, SubTypeHandlerMap>> = T
+export type MainTypeHandlerMap<
+  T extends Record<string, SubTypeHandlerMap> = Record<string, SubTypeHandlerMap>
+> = T

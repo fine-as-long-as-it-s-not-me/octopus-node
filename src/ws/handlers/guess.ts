@@ -9,7 +9,7 @@ type GuessHandlerDataMap = {
 }
 
 export const guessHandlers: SubTypeHandlerMap<GuessHandlerDataMap> = {
-  submit (socket, data: GuessSubmitData) {
+  submit(socket, data: GuessSubmitData) {
     // 추리하기
-  }
+  },
 }

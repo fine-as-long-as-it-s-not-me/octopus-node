@@ -39,19 +39,19 @@ type DrawHandlerDataMap = {
 }
 
 export const drawHandlers: SubTypeHandlerMap<DrawHandlerDataMap> = {
-  start (socket, data: StrokeStartData) {
+  start(socket, data: StrokeStartData) {
     // 그리기 시작
   },
-  end (socket, data: StrokeEndData) {
+  end(socket, data: StrokeEndData) {
     // 그림 끝
   },
-  erase_start (socket, data: EraseStartData) {
+  erase_start(socket, data: EraseStartData) {
     // 지우기 시작
   },
-  erase_end (socket, data: EraseEndData) {
+  erase_end(socket, data: EraseEndData) {
     // 지우기 끝
   },
-  background (socket, data: CanvasBackgroundData) {
+  background(socket, data: CanvasBackgroundData) {
     // 배경색 변경
-  }
+  },
 }

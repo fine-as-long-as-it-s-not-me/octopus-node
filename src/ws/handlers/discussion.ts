@@ -9,10 +9,10 @@ type DiscussionHandlerDataMap = {
 }
 
 export const discussionHandlers: SubTypeHandlerMap<DiscussionHandlerDataMap> = {
-  increase_time (socket, data: DiscussionIncreaseTimeData) {
+  increase_time(socket, data: DiscussionIncreaseTimeData) {
     // 토론 시간 늘리기 요청
   },
-  decrease_time (socket, data: DiscussionDecreaseTimeData) {
+  decrease_time(socket, data: DiscussionDecreaseTimeData) {
     // 토론 시간 줄이기 요청
-  }
+  },
 }

@@ -10,7 +10,7 @@ type VoteHandlerDataMap = {
 }
 
 export const voteHandlers: SubTypeHandlerMap<VoteHandlerDataMap> = {
-  cast (socket, data: VoteCastData) {
+  cast(socket, data: VoteCastData) {
     // 유저가 투표
-  }
+  },
 }

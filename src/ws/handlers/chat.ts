@@ -9,7 +9,7 @@ type ChatHandlerDataMap = {
 }
 
 export const chatHandlers: SubTypeHandlerMap<ChatHandlerDataMap> = {
-  send (socket, data: ChatSendData) {
+  send(socket, data: ChatSendData) {
     // 채팅 보내기
-  }
+  },
 }

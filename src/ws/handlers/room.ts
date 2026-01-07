@@ -37,19 +37,19 @@ type RoomHandlerDataMap = {
 }
 
 export const roomHandlers: SubTypeHandlerMap<RoomHandlerDataMap> = {
-  join (socket, data: RoomJoinData) {
+  join(socket, data: RoomJoinData) {
     // 대기방 입장
   },
-  leave (socket, data: RoomLeaveData) {
+  leave(socket, data: RoomLeaveData) {
     // 대기방 나가기
   },
-  delete_keyword (socket, data: RoomDeleteKeywordData) {
+  delete_keyword(socket, data: RoomDeleteKeywordData) {
     // 등록된 커스텀 제시어 제거
   },
-  vote_keyword (socket, data: RoomVoteKeywordData) {
+  vote_keyword(socket, data: RoomVoteKeywordData) {
     // 커스텀 제시어 투표
   },
-  update_setting (socket, data: RoomSettingsUpdatedData) {
+  update_setting(socket, data: RoomSettingsUpdatedData) {
     // 설정 변경
-  }
+  },
 }
