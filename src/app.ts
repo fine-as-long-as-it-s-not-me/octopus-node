@@ -7,6 +7,9 @@ const app = express()
 const server = http.createServer(app)
 const wss = new WebSocketServer({ server })
 
+const PORT = Number(process.env.PORT) || 8080
+server.listen(PORT)
+
 app.get('/', (req, res) => {
   res.send('WebSocket server is running.')
 })
@@ -39,5 +42,3 @@ wss.on('connection', (socket) => {
     subHandler(socket, data)
   })
 })
-
-server.listen(3000)
