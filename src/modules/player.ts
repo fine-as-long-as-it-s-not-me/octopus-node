@@ -1,12 +1,23 @@
+import { type WebSocket } from 'ws'
+
 class Player {
+  static nextId = 1
+
   id: string
   name: string
-  ws: WebSocket
+  socket: WebSocket
 
-  constructor(id: string, name: string, ws: WebSocket) {
-    this.id = id
+  constructor(name: string, socket: WebSocket) {
+    this.id = (Player.nextId++).toString()
     this.name = name
-    this.ws = ws
+    this.socket = socket
+  }
+
+  getPublicInfo() {
+    return {
+      id: this.id,
+      name: this.name,
+    }
   }
 }
 

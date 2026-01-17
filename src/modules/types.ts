@@ -15,3 +15,12 @@ export interface Chat {
   message: string
   timestamp: number
 }
+
+export interface Setting {
+  rounds: number
+  maxPlayers: number
+  liars: number
+  drawingTime: number
+  customWords: boolean
+  roomType: 'public' | 'private'
+}

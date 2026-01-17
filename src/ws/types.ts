@@ -7,5 +7,5 @@ export type SubTypeHandlerMap<T extends Record<string, unknown> = Record<string,
 }
 
 export type MainTypeHandlerMap<
-  T extends Record<string, SubTypeHandlerMap> = Record<string, SubTypeHandlerMap>
+  T extends Record<string, SubTypeHandlerMap> = Record<string, SubTypeHandlerMap>,
 > = T

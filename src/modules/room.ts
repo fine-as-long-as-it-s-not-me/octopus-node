@@ -1,54 +1,62 @@
-import { sendRoomMessage } from '../utils/message'
+import { sendMessage, sendRoomMessage } from '../utils/message'
 import { Game } from './game'
 import { Player } from './player'
-import { Chat } from './types'
+import { Chat, Setting } from './types'
 
 const MAX_PLAYERS = 12
-
-const system = new Player('system', 'System', {} as WebSocket)
+const DEFAULT_SETTING: Setting = {
+  rounds: 3,
+  maxPlayers: 8,
+  liars: 1,
+  drawingTime: 15,
+  customWords: false,
+  roomType: 'public',
+}
 
 class Room {
-  id: string
-  settings: Record<string, any>
+  static nextCode = 1000
+
+  code: string
+  setting: Setting
   players = new Set<Player>()
   keywords = new Map<string, number>()
   chats: Chat[] = []
+  host: Player
   game?: Game
 
   static rooms = new Map<string, Room>()
 
-  static createRoom(id: string, settings: Record<string, any>): Room {
-    const room = new Room(id, settings)
-    Room.rooms.set(id, room)
+  static createRoom(host: Player, setting: Setting = DEFAULT_SETTING): Room {
+    const room = new Room(host, setting)
+    Room.rooms.set(room.code, room)
     return room
   }
 
-  static getAvailableRoom(): Room | null {
-    const availableRooms = Array.from(Room.rooms.values()).filter(
-      (room) => room.players.size < MAX_PLAYERS && !room.game
-    )
-    if (availableRooms.length > 0) {
-      return availableRooms[Math.floor(Math.random() * availableRooms.length)]
-    }
-    return null
+  constructor(host: Player, setting: Setting) {
+    this.code = (Room.nextCode++).toString()
+    this.host = host
+    this.setting = setting
   }
 
-  constructor(id: string, settings: Record<string, any>) {
-    this.id = id
-    this.settings = settings
+  static getRoomByCode(roomCode: string): Room | undefined {
+    return Room.rooms.get(roomCode)
   }
 
-  updatePlayers(roomId: string, players: Set<Player>): void {
-    // 플레이어 목록을 업데이트하는 로직
+  // 플레이어 목록 업데이트
+  updatePlayers(): void {
+    this.players.forEach((player) => {
+      sendMessage(player.socket, 'players_updated', {
+        hostId: this.host.id,
+        me: player.getPublicInfo(),
+        players: Array.from(this.players).map((p) => p.getPublicInfo()),
+      })
+    })
   }
 
-  updateRoomSettings(roomId: string, settings: Record<string, any>): void {
-    // 방 설정을 업데이트하는 로직
-  }
-
-  addChatMessage(player: Player, message: string): void {
-    // 채팅 메시지를 추가하는 로직
-    sendRoomMessage(this, 'chat', { playerId: player.id, message })
+  // 플레이어 추가
+  addPlayer(player: Player): void {
+    this.players.add(player)
+    this.updatePlayers()
   }
 }
 

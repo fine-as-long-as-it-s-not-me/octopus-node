@@ -1,3 +1,6 @@
+import { Player } from '../../modules/player'
+import { Room } from '../../modules/room'
+import { sendMessage } from '../../utils/message'
 import { SubTypeHandlerMap } from '../types'
 
 type RoomSettings = {
@@ -11,7 +14,8 @@ type RoomSettings = {
 }
 
 type RoomJoinData = {
-  roomId: string
+  roomCode: string
+  name: string
 }
 
 type RoomLeaveData = Record<string, never>
@@ -39,6 +43,13 @@ type RoomHandlerDataMap = {
 export const roomHandlers: SubTypeHandlerMap<RoomHandlerDataMap> = {
   join(socket, data: RoomJoinData) {
     // 대기방 입장
+    const { roomCode, name } = data
+    let room = Room.getRoomByCode(roomCode)
+
+    if (room) room.addPlayer(new Player(name, socket))
+    else room = Room.createRoom(new Player(name, socket))
+
+    sendMessage(socket, 'welcome', { roomCode: room.code })
   },
   leave(socket, data: RoomLeaveData) {
     // 대기방 나가기
