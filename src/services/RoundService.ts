@@ -18,7 +18,7 @@ export class Round {
   }
 
   getNewOctopus(): Player {
-    const n = this.room.players.size
+    const n = this.room.players.length
     const randomIndex = Math.floor(Math.random() * n)
     return Array.from(this.room.players)[randomIndex]
   }
