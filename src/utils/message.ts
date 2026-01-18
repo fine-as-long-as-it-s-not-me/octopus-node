@@ -1,5 +1,5 @@
 import { WebSocket } from 'ws'
-import { Room } from '../modules/room'
+import { Room } from '../services/RoomService'
 
 export function sendMessage(socket: WebSocket, type: string, data: any): void {
   const message = JSON.stringify({ type, data })

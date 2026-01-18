@@ -1,5 +1,5 @@
-import { Player } from './player'
-import { Room } from './room'
+import { Player } from './PlayerService'
+import { Room } from './RoomService'
 import { GamePhaseType } from './types'
 
 const games = new Map<string, Game>()
@@ -10,7 +10,7 @@ class Game {
   room: Room
   scores = new Map<Player, number>()
   phaseHandlers = {
-    pending: this.handlePendingPhase,
+    waiting: this.handleWaitingPhase,
     keyword: this.handleKeywordPhase,
     drawing: this.handleDrawingPhase,
     discussion: this.handleDiscussionPhase,
@@ -35,43 +35,43 @@ class Game {
   }
 
   newRound(roundNumber: number): void {
-    // 새로운 라운드를 시작하는 로직
+    // 새로운 라운드
   }
 
   startGame(roomId: string): void {
     // 게임을 시작하는 로직
   }
 
-  handlePendingPhase(): void {
-    // 대기 단계를 시작하는 로직
+  handleWaitingPhase(): void {
+    // 대기방 단계
   }
 
   handleKeywordPhase(): void {
-    // 키워드 선택 단계를 시작하는 로직
+    // 키워드 표시 단계
   }
 
   handleDrawingPhase(): void {
-    // 그림 그리기 단계를 시작하는 로직
+    // 그림 그리기 단계
   }
 
   handleDiscussionPhase(): void {
-    // 토론 단계를 시작하는 로직
+    // 토론 단계
   }
 
   handleVotingPhase(): void {
-    // 투표 단계를 시작하는 로직
+    // 투표 단계
   }
 
   handleVoteResultPhase(): void {
-    // 투표 결과 발표 단계를 시작하는 로직
+    // 투표 결과 발표 단계
   }
 
   handleGuessingPhase(): void {
-    // 추측 단계를 시작하는 로직
+    // 라이어의 제시어 추측 단계
   }
 
   handleResultPhase(): void {
-    // 결과 발표 단계를 시작하는 로직
+    // 결과 발표 단계
   }
 
   endGame(roomId: string): void {

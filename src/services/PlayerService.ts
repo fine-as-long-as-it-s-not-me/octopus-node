@@ -13,7 +13,7 @@ class Player {
     this.socket = socket
   }
 
-  getPublicInfo() {
+  getPublic() {
     return {
       id: this.id,
       name: this.name,

@@ -1,13 +1,13 @@
 import { MainTypeHandlerMap } from './types'
 
-import { voteHandlers } from './handlers/vote'
-import { discussionHandlers } from './handlers/discussion'
-import { kickHandlers } from './handlers/kick'
-import { guessHandlers } from './handlers/guess'
-import { drawHandlers } from './handlers/draw'
-import { chatHandlers } from './handlers/chat'
-import { gameHandlers } from './handlers/game'
-import { roomHandlers } from './handlers/room'
+import { voteHandlers } from './handlers/VoteHandler'
+import { discussionHandlers } from './handlers/DiscussionHandler'
+import { kickHandlers } from './handlers/KickHandler'
+import { guessHandlers } from './handlers/GuessHandler'
+import { drawHandlers } from './handlers/DrawHandler'
+import { chatHandlers } from './handlers/ChatHandler'
+import { gameHandlers } from './handlers/GameHandler'
+import { roomHandlers } from './handlers/RoomHandler'
 
 export const handlers: MainTypeHandlerMap = {
   vote: voteHandlers,

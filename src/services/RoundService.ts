@@ -1,5 +1,5 @@
-import { Player } from './player'
-import { Room } from './room'
+import { Player } from './PlayerService'
+import { Room } from './RoomService'
 import { GamePhaseType } from './types'
 
 export class Round {

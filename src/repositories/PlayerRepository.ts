@@ -1,0 +1,3 @@
+class PlayerRepository {}
+
+export { PlayerRepository }

@@ -1,6 +1,6 @@
 import { sendMessage, sendRoomMessage } from '../utils/message'
-import { Game } from './game'
-import { Player } from './player'
+import { Game } from './GameService'
+import { Player } from './PlayerService'
 import { Chat, Setting } from './types'
 
 const MAX_PLAYERS = 12
@@ -47,8 +47,7 @@ class Room {
     this.players.forEach((player) => {
       sendMessage(player.socket, 'players_updated', {
         hostId: this.host.id,
-        me: player.getPublicInfo(),
-        players: Array.from(this.players).map((p) => p.getPublicInfo()),
+        players: Array.from(this.players).map((p) => p.getPublic()),
       })
     })
   }

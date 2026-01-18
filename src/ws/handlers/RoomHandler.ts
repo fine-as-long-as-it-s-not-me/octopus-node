@@ -1,5 +1,5 @@
-import { Player } from '../../modules/player'
-import { Room } from '../../modules/room'
+import { Player } from '../../services/PlayerService'
+import { Room } from '../../services/RoomService'
 import { sendMessage } from '../../utils/message'
 import { SubTypeHandlerMap } from '../types'
 
@@ -45,11 +45,11 @@ export const roomHandlers: SubTypeHandlerMap<RoomHandlerDataMap> = {
     // 대기방 입장
     const { roomCode, name } = data
     let room = Room.getRoomByCode(roomCode)
+    const player = new Player(name, socket)
+    if (room) room.addPlayer(player)
+    else room = Room.createRoom(player)
 
-    if (room) room.addPlayer(new Player(name, socket))
-    else room = Room.createRoom(new Player(name, socket))
-
-    sendMessage(socket, 'welcome', { roomCode: room.code })
+    sendMessage(socket, 'welcome', { userId: player.id, roomCode: room.code })
   },
   leave(socket, data: RoomLeaveData) {
     // 대기방 나가기
