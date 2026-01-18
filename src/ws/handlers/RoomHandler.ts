@@ -18,6 +18,10 @@ type RoomJoinData = {
   name: string
 }
 
+type RoomRandomJoinData = {
+  name: string
+}
+
 type RoomLeaveData = {
   roomCode: string
 }
@@ -40,15 +44,26 @@ type RoomHandlerDataMap = {
   delete_keyword: RoomDeleteKeywordData
   vote_keyword: RoomVoteKeywordData
   update_setting: RoomSettingsUpdatedData
+  join_random: RoomRandomJoinData
 }
 
 export const roomHandlers: SubTypeHandlerMap<RoomHandlerDataMap> = {
   join(socket, data: RoomJoinData) {
     // 대기방 입장
     const { roomCode, name } = data
-    let room = Room.getRoomByCode(roomCode)
     const player = new Player(name, socket)
+
+    let room = Room.getRoomByCode(roomCode)
     if (!room) room = Room.createRoom(player, roomCode)
+    else room.addPlayer(player)
+  },
+  join_random(socket, data: RoomRandomJoinData) {
+    // 랜덤 대기방 입장
+    const { name } = data
+    const player = new Player(name, socket)
+
+    let room = Room.getRandomRoom()
+    if (!room) room = Room.createRoom(player)
     else room.addPlayer(player)
   },
   leave(socket, data: RoomLeaveData) {
