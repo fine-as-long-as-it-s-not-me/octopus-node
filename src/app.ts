@@ -18,6 +18,7 @@ wss.on('connection', (socket) => {
   socket.on('message', (rawMessage) => {
     try {
       const { mainType, subType, data } = JSON.parse(rawMessage.toString())
+      console.log(`Received message: mainType=${mainType}, subType=${subType}`)
       handlers[mainType][subType](socket, data)
     } catch (error) {
       console.error('Error handling message:', error)

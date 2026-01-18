@@ -14,28 +14,44 @@ const DEFAULT_SETTING: Setting = {
 }
 
 class Room {
+  static rooms = new Map<string, Room>()
   static nextCode = 1000
 
   code: string
   setting: Setting
-  players = new Set<Player>()
+  players: Player[] = []
   keywords = new Map<string, number>()
   chats: Chat[] = []
   host: Player
   game?: Game
 
-  static rooms = new Map<string, Room>()
+  static createRoom(host: Player, roomCode?: string, setting = DEFAULT_SETTING): Room {
+    let room: Room
+    if (roomCode) {
+      if (Room.rooms.has(roomCode)) {
+        throw new Error('Room code already exists')
+      }
+      room = new Room(host, roomCode, setting)
+    } else {
+      let autoRoomCode = Room.nextCode.toString()
+      while (Room.rooms.has(autoRoomCode)) {
+        Room.nextCode += 1
+        autoRoomCode = Room.nextCode.toString()
+      }
+      room = new Room(host, autoRoomCode, setting)
+    }
 
-  static createRoom(host: Player, setting: Setting = DEFAULT_SETTING): Room {
-    const room = new Room(host, setting)
     Room.rooms.set(room.code, room)
     return room
   }
 
-  constructor(host: Player, setting: Setting) {
-    this.code = (Room.nextCode++).toString()
+  constructor(host: Player, roomCode: string, setting: Setting) {
+    this.code = roomCode
     this.host = host
     this.setting = setting
+    this.players.push(host)
+    this.sendWelcomeMessage(host)
+    this.updatePlayers()
   }
 
   static getRoomByCode(roomCode: string): Room | undefined {
@@ -47,15 +63,32 @@ class Room {
     this.players.forEach((player) => {
       sendMessage(player.socket, 'players_updated', {
         hostId: this.host.id,
-        players: Array.from(this.players).map((p) => p.getPublic()),
+        players: this.players.map((p) => p.getPublic()),
       })
     })
   }
 
   // 플레이어 추가
   addPlayer(player: Player): void {
-    this.players.add(player)
+    this.players.push(player)
+    this.sendWelcomeMessage(player)
     this.updatePlayers()
+  }
+
+  // 플레이어 제거
+  removePlayer(player?: Player): void {
+    if (!player) return
+    this.players = this.players.filter((p) => p.id !== player.id)
+    if (this.players.length === 0) {
+      Room.rooms.delete(this.code)
+    } else {
+      if (this.host.id === player.id) this.host = this.players[0]
+      this.updatePlayers()
+    }
+  }
+
+  sendWelcomeMessage(player: Player): void {
+    sendMessage(player.socket, 'welcome', { userId: player.id, roomCode: this.code })
   }
 }
 

@@ -18,7 +18,9 @@ type RoomJoinData = {
   name: string
 }
 
-type RoomLeaveData = Record<string, never>
+type RoomLeaveData = {
+  roomCode: string
+}
 
 type RoomDeleteKeywordData = {
   keyword: string
@@ -46,13 +48,15 @@ export const roomHandlers: SubTypeHandlerMap<RoomHandlerDataMap> = {
     const { roomCode, name } = data
     let room = Room.getRoomByCode(roomCode)
     const player = new Player(name, socket)
-    if (room) room.addPlayer(player)
-    else room = Room.createRoom(player)
-
-    sendMessage(socket, 'welcome', { userId: player.id, roomCode: room.code })
+    if (!room) room = Room.createRoom(player, roomCode)
+    else room.addPlayer(player)
   },
   leave(socket, data: RoomLeaveData) {
     // 대기방 나가기
+    const { roomCode } = data
+    const room = Room.getRoomByCode(roomCode)
+    if (!room) return
+    room.removePlayer(room.players.find((p) => p.socket === socket))
   },
   delete_keyword(socket, data: RoomDeleteKeywordData) {
     // 등록된 커스텀 제시어 제거
