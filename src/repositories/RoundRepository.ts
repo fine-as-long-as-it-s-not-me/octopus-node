@@ -1,0 +1,3 @@
+class RoundRepository {}
+
+export { RoundRepository }

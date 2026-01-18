@@ -1,3 +1,6 @@
+import { Player } from '../../services/PlayerService'
+import { Room } from '../../services/RoomService'
+import { sendMessage } from '../../utils/message'
 import { SubTypeHandlerMap } from '../types'
 
 type RoomSettings = {
@@ -11,10 +14,13 @@ type RoomSettings = {
 }
 
 type RoomJoinData = {
-  roomId: string
+  roomCode: string
+  name: string
 }
 
-type RoomLeaveData = Record<string, never>
+type RoomLeaveData = {
+  roomCode: string
+}
 
 type RoomDeleteKeywordData = {
   keyword: string
@@ -39,9 +45,18 @@ type RoomHandlerDataMap = {
 export const roomHandlers: SubTypeHandlerMap<RoomHandlerDataMap> = {
   join(socket, data: RoomJoinData) {
     // 대기방 입장
+    const { roomCode, name } = data
+    let room = Room.getRoomByCode(roomCode)
+    const player = new Player(name, socket)
+    if (!room) room = Room.createRoom(player, roomCode)
+    else room.addPlayer(player)
   },
   leave(socket, data: RoomLeaveData) {
     // 대기방 나가기
+    const { roomCode } = data
+    const room = Room.getRoomByCode(roomCode)
+    if (!room) return
+    room.removePlayer(room.players.find((p) => p.socket === socket))
   },
   delete_keyword(socket, data: RoomDeleteKeywordData) {
     // 등록된 커스텀 제시어 제거

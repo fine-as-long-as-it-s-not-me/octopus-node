@@ -16,29 +16,12 @@ app.get('/', (req, res) => {
 
 wss.on('connection', (socket) => {
   socket.on('message', (rawMessage) => {
-    let payload
-
     try {
-      payload = JSON.parse(rawMessage.toString())
-    } catch {
-      console.error('Invalid JSON:', rawMessage)
-      return
+      const { mainType, subType, data } = JSON.parse(rawMessage.toString())
+      console.log(`Received message: mainType=${mainType}, subType=${subType}`)
+      handlers[mainType][subType](socket, data)
+    } catch (error) {
+      console.error('Error handling message:', error)
     }
-
-    const { mainType, subType, data } = payload
-
-    const mainHandler = handlers[mainType]
-    if (!mainHandler) {
-      console.warn('Unknown mainType:', mainType)
-      return
-    }
-
-    const subHandler = mainHandler[subType]
-    if (!subHandler) {
-      console.warn(`Unknown subtype: ${mainType}.${subType}`)
-      return
-    }
-
-    subHandler(socket, data)
   })
 })

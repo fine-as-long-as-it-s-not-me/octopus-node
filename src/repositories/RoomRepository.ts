@@ -1,0 +1,3 @@
+class RoomRepository {}
+
+export { RoomRepository }

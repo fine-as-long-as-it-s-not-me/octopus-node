@@ -1,4 +1,6 @@
-class canvas {
+import { Stroke } from './types'
+
+class Canvas {
   strokes: Stroke[]
   backgroundColor: string
 
@@ -15,12 +17,3 @@ class canvas {
     this.strokes = []
   }
 }
-
-interface Stroke {
-  color: string
-  size: number
-  points: { x: number; y: number }[]
-  tool: ToolType
-}
-
-type ToolType = 'brush' | 'eraser'
