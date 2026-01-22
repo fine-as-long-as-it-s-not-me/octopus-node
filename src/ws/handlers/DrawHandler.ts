@@ -17,7 +17,7 @@ type StrokeEndData = {
 }
 
 type CanvasBackgroundData = {
-  bgColor: string
+  canvasColor: string
 }
 
 type DrawHandlerDataMap = {

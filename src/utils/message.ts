@@ -2,6 +2,7 @@ import { WebSocket } from 'ws'
 import { Room } from '../services/RoomService'
 
 export function sendMessage(socket: WebSocket, type: string, data: any): void {
+  console.log('Sending message:', { type, data })
   const message = JSON.stringify({ type, data })
   socket.send(message)
 }
