@@ -45,6 +45,15 @@ class Room {
     return room
   }
 
+  static getRandomRoom(): Room | undefined {
+    const publicRooms = Array.from(Room.rooms.values()).filter(
+      (room) => room.setting.roomType === 'public' && room.players.length < room.setting.maxPlayers,
+    )
+    if (publicRooms.length === 0) return undefined
+    const randomIndex = Math.floor(Math.random() * publicRooms.length)
+    return publicRooms[randomIndex]
+  }
+
   constructor(host: Player, roomCode: string, setting: Setting) {
     this.code = roomCode
     this.host = host
