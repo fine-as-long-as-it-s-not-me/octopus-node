@@ -30,9 +30,7 @@ class RoomService {
   // 플레이어 추가
   join(code: string, socket: WebSocket, UUID: string, name: string): void {
     let player = playerRepository.findByUUID(UUID)
-    if (!player) {
-      player = playerRepository.create({ UUID, name, socket })
-    }
+    if (!player) player = playerRepository.create({ UUID, name, socket })
 
     let room = roomRepository.findByCode(code)
     if (!room) room = this.createRoom(player, DEFAULT_SETTING, code)
@@ -44,16 +42,11 @@ class RoomService {
 
   joinRandom(socket: WebSocket, UUID: string, name: string): void {
     let player = playerRepository.findByUUID(UUID)
-    if (!player) {
-      player = playerRepository.create({ UUID, name, socket })
-    }
+    if (!player) player = playerRepository.create({ UUID, name, socket })
 
     let room = this.getRandomRoom()
-    if (!room) room = this.createRoom(player, DEFAULT_SETTING)
-    else room.players.push(player)
-
-    this.sendWelcomeMessage(room, player)
-    this.updatePlayers(room)
+    if (room && room.code) this.join(room.code, socket, UUID, name)
+    else room = this.createRoom(player, DEFAULT_SETTING)
   }
 
   // 플레이어 제거

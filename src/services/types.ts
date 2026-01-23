@@ -35,5 +35,3 @@ export interface Stroke {
 }
 
 export type ToolType = 'pen' | 'eraser'
-
-export type PlayerResponse = Omit<PlayerData, 'socket'>
