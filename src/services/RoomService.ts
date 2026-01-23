@@ -3,9 +3,9 @@ import { PlayerData } from '../data/PlayerData'
 import { RoomData } from '../data/RoomData'
 import { playerRepository } from '../repositories/PlayerRepository'
 import { roomRepository } from '../repositories/RoomRepository'
-import { sendMessage } from '../utils/message'
 import { Setting } from './types'
 import { DEFAULT_SETTING } from '../consts'
+import { playerService } from './PlayerService'
 
 class RoomService {
   createRoom(host: PlayerData, setting: Setting, code?: string) {
@@ -27,16 +27,6 @@ class RoomService {
     return publicRooms[randomIndex]
   }
 
-  // 플레이어 목록 업데이트
-  updatePlayers(room: RoomData): void {
-    room.players.forEach((player) => {
-      sendMessage(player.socket, 'players_updated', {
-        hostId: room.host.id,
-        players: room.players,
-      })
-    })
-  }
-
   // 플레이어 추가
   join(code: string, socket: WebSocket, UUID: string, name: string): void {
     let player = playerRepository.findByUUID(UUID)
@@ -46,7 +36,7 @@ class RoomService {
 
     let room = roomRepository.findByCode(code)
     if (!room) room = this.createRoom(player, DEFAULT_SETTING, code)
-    else room.players.push(player)
+    else roomRepository.addPlayer(room.id, player)
 
     this.sendWelcomeMessage(room, player)
     this.updatePlayers(room)
@@ -78,8 +68,20 @@ class RoomService {
     }
   }
 
+  // 플레이어 목록 업데이트
+  updatePlayers(room: RoomData): void {
+    this.sendMessage(room, 'players_updated', {
+      hostUUID: room.host.UUID,
+      players: room.players,
+    })
+  }
+
   sendWelcomeMessage(room: RoomData, player: PlayerData): void {
-    sendMessage(player.socket, 'welcome', { roomCode: room.code })
+    playerService.sendMessage(player.id, 'welcome', { roomCode: room.code })
+  }
+
+  sendMessage(room: RoomData, type: string, data: any): void {
+    for (const player of room.players) playerService.sendMessage(player.id, type, data)
   }
 }
 
