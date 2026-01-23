@@ -49,4 +49,5 @@ jobs:
             docker run -d --name octopus-node -p 8081:8081 \
               --platform linux/arm64 \
               -e BACKEND_URL=http://161.33.40.189:8080 \
+              -e PORT=8081 \
               ${{ secrets.OCI_REGISTRY }}/axslwmgnmqcx/findtheoctopus-node:dev
