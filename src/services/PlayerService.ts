@@ -1,6 +1,5 @@
 import { WebSocket } from 'ws'
 import { playerRepository } from '../repositories/PlayerRepository'
-import { roomService } from './RoomService'
 
 class PlayerService {
   login(socket: WebSocket, UUID: string, name: string) {

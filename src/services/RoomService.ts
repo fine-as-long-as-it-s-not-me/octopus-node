@@ -58,7 +58,6 @@ class RoomService {
     const player = room.players.find((p) => p.socket === socket)
     if (!player) return
 
-    player.roomId = null
     this.removePlayer(room.id, player.id)
   }
 
@@ -74,7 +73,9 @@ class RoomService {
   updatePlayers(room: RoomData): void {
     this.sendMessage(room, 'players_updated', {
       hostUUID: room.host.UUID,
-      players: room.players.map((p) => playerRepository.getResponseDTO(p.id)),
+      players: room.players
+        .map((p) => playerRepository.getResponseDTO(p.id))
+        .filter((playerDTO) => playerDTO !== null),
     })
   }
 
