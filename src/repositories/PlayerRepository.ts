@@ -2,6 +2,7 @@ import { WebSocket } from 'ws'
 import { BaseRepository } from './BaseRepository'
 import { PlayerData } from '../data/PlayerData'
 import { roomRepository } from './RoomRepository'
+import { roomService } from '../services/RoomService'
 
 class PlayerRepository extends BaseRepository<PlayerData> {
   create({ UUID, name, socket }: Pick<PlayerData, 'UUID' | 'name' | 'socket'>): PlayerData {
@@ -14,7 +15,14 @@ class PlayerRepository extends BaseRepository<PlayerData> {
   }
 
   logout(playerId: number): void {
+    const player = this.findById(playerId)
+    if (!player) return
+
     this.records.delete(playerId)
+    player.logout()
+    if (player.roomId) roomService.removePlayer(player.roomId, player.id)
+
+    console.log(`Player logged out: ${player.name} (${player.UUID})`)
   }
 
   findBySocket(socket: WebSocket): PlayerData | null {

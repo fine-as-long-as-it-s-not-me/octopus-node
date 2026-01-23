@@ -19,15 +19,7 @@ class PlayerService {
   }
 
   logout(playerId: number) {
-    const player = playerRepository.findById(playerId)
-    if (!player) return console.error(`Player with ID ${playerId} not found`)
-
-    player.logout()
-    console.log(`Player logged out: ${player.name} (${player.UUID})`)
-
-    if (player.roomId) {
-      roomService.removePlayer(player.roomId, player.id)
-    }
+    playerRepository.logout(playerId)
   }
 
   sendMessage(playerId: number, type: string, data: any): void {
