@@ -1,4 +1,3 @@
-import { playerRepository } from '../../repositories/PlayerRepository'
 import { playerService } from '../../services/PlayerService'
 import { SubTypeHandlerMap } from '../types'
 

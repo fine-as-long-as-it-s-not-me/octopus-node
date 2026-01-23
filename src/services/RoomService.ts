@@ -72,7 +72,7 @@ class RoomService {
   updatePlayers(room: RoomData): void {
     this.sendMessage(room, 'players_updated', {
       hostUUID: room.host.UUID,
-      players: room.players,
+      players: room.players.map((p) => p.getResponseDTO()),
     })
   }
 
