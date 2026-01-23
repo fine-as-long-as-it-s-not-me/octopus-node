@@ -1,5 +1,5 @@
 import { CanvasData } from '../data/CanvasData'
-import { Stroke } from './types'
+import { Stroke } from '../data/types'
 
 class CanvasService {
   addStroke(canvas: CanvasData, stroke: Stroke): void {

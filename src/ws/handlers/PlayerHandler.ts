@@ -7,12 +7,12 @@ type PlayerRegisterData = {
 }
 
 type PlayerHandlerDataMap = {
-  register: PlayerRegisterData
+  login: PlayerRegisterData
 }
 
 export const playerHandlers: SubTypeHandlerMap<PlayerHandlerDataMap> = {
-  register(socket, data: PlayerRegisterData) {
+  login(socket, data: PlayerRegisterData) {
     const { UUID, name } = data
-    playerService.register(socket, UUID, name)
+    playerService.login(socket, UUID, name)
   },
 }

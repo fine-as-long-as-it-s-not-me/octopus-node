@@ -1,7 +1,7 @@
 import { DEFAULT_SETTING } from '../consts'
 import { PlayerData } from '../data/PlayerData'
 import { RoomData } from '../data/RoomData'
-import { Setting } from '../services/types'
+import { Setting } from '../data/types'
 import { BaseRepository } from './BaseRepository'
 
 class RoomRepository extends BaseRepository<RoomData> {
@@ -49,7 +49,25 @@ class RoomRepository extends BaseRepository<RoomData> {
   addPlayer(roomId: number, player: PlayerData): void {
     const room = this.findById(roomId)
     if (!room) throw new Error('Room not found')
+    player.roomId = roomId
+    if (room.players.find((p) => p.id === player.id)) return
     room.players.push(player)
+  }
+
+  removePlayer(roomId: number, playerId: number): void {
+    const room = this.findById(roomId)
+    if (!room) throw new Error('Room not found')
+
+    const player = room.players.find((p) => p.id === playerId)
+    if (player) player.roomId = null
+
+    room.players = room.players.filter((p) => p.id !== playerId)
+
+    if (room.players.length === 0) {
+      this.delete(roomId)
+    } else if (room.host.id === playerId) {
+      room.host = room.players[0]
+    }
   }
 }
 
