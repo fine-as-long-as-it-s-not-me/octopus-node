@@ -1,12 +1,20 @@
 import { WebSocket } from 'ws'
 import { BaseRepository } from './BaseRepository'
 import { PlayerData } from '../data/PlayerData'
+import { roomRepository } from './RoomRepository'
 
 class PlayerRepository extends BaseRepository<PlayerData> {
-  create({ UUID, name, socket }: Omit<PlayerData, 'id' | 'getResponseDTO'>): PlayerData {
+  create({ UUID, name, socket }: Pick<PlayerData, 'UUID' | 'name' | 'socket'>): PlayerData {
     const player = new PlayerData(UUID, name, socket)
     this.records.set(player.id, player)
+
+    console.log(Array.from(this.records.values()).map((p) => p.name))
+
     return player
+  }
+
+  logout(playerId: number): void {
+    this.records.delete(playerId)
   }
 
   findBySocket(socket: WebSocket): PlayerData | null {
@@ -25,6 +33,20 @@ class PlayerRepository extends BaseRepository<PlayerData> {
       }
     }
     return null
+  }
+
+  getResponseDTO(id: number) {
+    const player = this.findById(id)
+    if (!player) return null
+
+    const room = player.roomId ? roomRepository.findById(player.roomId) : null
+
+    return {
+      id: player.id,
+      UUID: player.UUID,
+      name: player.name,
+      roomCode: room ? room.code : null,
+    }
   }
 }
 

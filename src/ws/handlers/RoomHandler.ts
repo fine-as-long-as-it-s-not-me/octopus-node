@@ -66,11 +66,7 @@ export const roomHandlers: SubTypeHandlerMap<RoomHandlerDataMap> = {
   leave(socket, data: RoomLeaveData) {
     // 대기방 나가기
     const { roomCode } = data
-    const room = roomRepository.findByCode(roomCode)
-    if (!room) return
-    const player = room.players.find((p) => p.socket === socket)
-    if (!player) return
-    roomService.removePlayer(room, player.id)
+    roomService.leave(roomCode, socket)
   },
   delete_keyword(socket, data: RoomDeleteKeywordData) {
     // 등록된 커스텀 제시어 제거

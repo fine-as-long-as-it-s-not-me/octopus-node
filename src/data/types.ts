@@ -25,3 +25,12 @@ export interface Stroke {
 }
 
 export type ToolType = 'pen' | 'eraser'
+export type GamePhaseType =
+  | 'pending'
+  | 'keyword'
+  | 'drawing'
+  | 'discussion'
+  | 'voting'
+  | 'voteResult'
+  | 'guessing'
+  | 'result'

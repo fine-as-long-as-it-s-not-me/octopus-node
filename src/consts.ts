@@ -1,4 +1,4 @@
-import { Setting } from './services/types'
+import { Setting } from './data/types'
 
 export const MAX_PLAYERS = 12
 export const DEFAULT_SETTING: Setting = {

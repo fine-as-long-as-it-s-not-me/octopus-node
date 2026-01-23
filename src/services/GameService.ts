@@ -1,4 +1,4 @@
-import { GamePhaseType } from './types'
+import { GamePhaseType } from '../data/types'
 
 class GameService {
   phaseHandlers = {

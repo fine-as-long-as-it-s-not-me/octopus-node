@@ -3,9 +3,9 @@ import { PlayerData } from '../data/PlayerData'
 import { RoomData } from '../data/RoomData'
 import { playerRepository } from '../repositories/PlayerRepository'
 import { roomRepository } from '../repositories/RoomRepository'
-import { Setting } from './types'
 import { DEFAULT_SETTING } from '../consts'
 import { playerService } from './PlayerService'
+import { Setting } from '../data/types'
 
 class RoomService {
   createRoom(host: PlayerData, setting: Setting, code?: string) {
@@ -50,23 +50,31 @@ class RoomService {
     else this.createRoom(player, DEFAULT_SETTING)
   }
 
+  // 대기방 나가기
+  leave(roomCode: string, socket: WebSocket): void {
+    const room = roomRepository.findByCode(roomCode)
+    if (!room) return
+
+    const player = room.players.find((p) => p.socket === socket)
+    if (!player) return
+
+    player.roomId = null
+    this.removePlayer(room.id, player.id)
+  }
+
   // 플레이어 제거
-  removePlayer(room: RoomData, playerId: number): void {
-    if (!playerId) return
-    room.players = room.players.filter((p) => p.id !== playerId)
-    if (room.players.length === 0) {
-      roomRepository.delete(room.id)
-    } else {
-      if (room.host.id === playerId) room.host = room.players[0]
-      this.updatePlayers(room)
-    }
+  removePlayer(roomId: number, playerId: number): void {
+    roomRepository.removePlayer(roomId, playerId)
+
+    const room = roomRepository.findById(roomId)
+    if (room) this.updatePlayers(room)
   }
 
   // 플레이어 목록 업데이트
   updatePlayers(room: RoomData): void {
     this.sendMessage(room, 'players_updated', {
       hostUUID: room.host.UUID,
-      players: room.players.map((p) => p.getResponseDTO()),
+      players: room.players.map((p) => playerRepository.getResponseDTO(p.id)),
     })
   }
 
