@@ -33,7 +33,7 @@ class RoomRepository extends BaseRepository<RoomData> {
     this.records.set(room.id, room)
     const res = this.findById(room.id)
     if (!res) throw new Error('Failed to create room')
-    room.players.push(host)
+    this.addPlayer(room.id, host)
     return res
   }
 
@@ -44,6 +44,12 @@ class RoomRepository extends BaseRepository<RoomData> {
       }
     }
     return null
+  }
+
+  addPlayer(roomId: number, player: PlayerData): void {
+    const room = this.findById(roomId)
+    if (!room) throw new Error('Room not found')
+    room.players.push(player)
   }
 }
 

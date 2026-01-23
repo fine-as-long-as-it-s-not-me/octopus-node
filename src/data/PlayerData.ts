@@ -14,6 +14,14 @@ class PlayerData {
     this.name = name
     this.socket = socket
   }
+
+  getResponseDTO() {
+    return {
+      id: this.id,
+      UUID: this.UUID,
+      name: this.name,
+    }
+  }
 }
 
 export { PlayerData }

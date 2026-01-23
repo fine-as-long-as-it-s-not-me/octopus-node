@@ -3,7 +3,7 @@ import { BaseRepository } from './BaseRepository'
 import { PlayerData } from '../data/PlayerData'
 
 class PlayerRepository extends BaseRepository<PlayerData> {
-  create({ UUID, name, socket }: Omit<PlayerData, 'id'>): PlayerData {
+  create({ UUID, name, socket }: Omit<PlayerData, 'id' | 'getResponseDTO'>): PlayerData {
     const player = new PlayerData(UUID, name, socket)
     this.records.set(player.id, player)
     return player
