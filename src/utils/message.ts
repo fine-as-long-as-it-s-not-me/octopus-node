@@ -1,5 +1,5 @@
 import { WebSocket } from 'ws'
-import { Room } from '../services/RoomService'
+import { RoomData } from '../data/RoomData'
 
 export function sendMessage(socket: WebSocket, type: string, data: any): void {
   console.log('Sending message:', { type, data })
@@ -7,7 +7,7 @@ export function sendMessage(socket: WebSocket, type: string, data: any): void {
   socket.send(message)
 }
 
-export function sendRoomMessage(room: Room, type: string, data: any): void {
+export function sendRoomMessage(room: RoomData, type: string, data: any): void {
   const message = JSON.stringify({ type, data })
   for (const player of room.players) {
     player.socket.send(message)

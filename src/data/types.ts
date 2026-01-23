@@ -1,14 +1,4 @@
-import { PlayerData } from '../data/PlayerData'
-
-export type GamePhaseType =
-  | 'pending'
-  | 'keyword'
-  | 'drawing'
-  | 'discussion'
-  | 'voting'
-  | 'voteResult'
-  | 'guessing'
-  | 'result'
+import { PlayerData } from './PlayerData'
 
 export interface Chat {
   player: PlayerData

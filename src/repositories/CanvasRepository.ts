@@ -1,3 +1,8 @@
-class CanvasRepository {}
+import { CanvasData } from '../data/CanvasData'
+import { BaseRepository } from './BaseRepository'
 
-export { CanvasRepository }
+class CanvasRepository extends BaseRepository<CanvasData> {}
+
+const canvasRepository = new CanvasRepository('canvases')
+
+export { canvasRepository }

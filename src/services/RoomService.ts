@@ -1,104 +1,88 @@
-import { sendMessage, sendRoomMessage } from '../utils/message'
-import { Game } from './GameService'
-import { Player } from './PlayerService'
-import { Chat, Setting } from './types'
+import { WebSocket } from 'ws'
+import { PlayerData } from '../data/PlayerData'
+import { RoomData } from '../data/RoomData'
+import { playerRepository } from '../repositories/PlayerRepository'
+import { roomRepository } from '../repositories/RoomRepository'
+import { sendMessage } from '../utils/message'
+import { Setting } from './types'
+import { DEFAULT_SETTING } from '../consts'
 
-const MAX_PLAYERS = 12
-const DEFAULT_SETTING: Setting = {
-  rounds: 3,
-  maxPlayers: 8,
-  liars: 1,
-  drawingTime: 15,
-  customWords: false,
-  roomType: 'public',
-}
+class RoomService {
+  createRoom(host: PlayerData, setting: Setting, code?: string) {
+    const room = roomRepository.create({ host, code, setting })
+    this.sendWelcomeMessage(room, host)
+    this.updatePlayers(room)
 
-class Room {
-  static rooms = new Map<string, Room>()
-  static nextCode = 1000
-
-  code: string
-  setting: Setting
-  players: Player[] = []
-  keywords = new Map<string, number>()
-  chats: Chat[] = []
-  host: Player
-  game?: Game
-
-  static createRoom(host: Player, roomCode?: string, setting = DEFAULT_SETTING): Room {
-    let room: Room
-    if (roomCode) {
-      if (Room.rooms.has(roomCode)) {
-        throw new Error('Room code already exists')
-      }
-      room = new Room(host, roomCode, setting)
-    } else {
-      let autoRoomCode = Room.nextCode.toString()
-      while (Room.rooms.has(autoRoomCode)) {
-        Room.nextCode += 1
-        autoRoomCode = Room.nextCode.toString()
-      }
-      room = new Room(host, autoRoomCode, setting)
-    }
-
-    Room.rooms.set(room.code, room)
     return room
   }
 
-  static getRandomRoom(): Room | undefined {
-    const publicRooms = Array.from(Room.rooms.values()).filter(
-      (room) => room.setting.roomType === 'public' && room.players.length < room.setting.maxPlayers,
+  getRandomRoom(): RoomData | undefined {
+    const publicRooms = Array.from(
+      roomRepository.search((room) => {
+        return room.setting.roomType === 'public' && !room.game
+      }),
     )
     if (publicRooms.length === 0) return undefined
     const randomIndex = Math.floor(Math.random() * publicRooms.length)
     return publicRooms[randomIndex]
   }
 
-  constructor(host: Player, roomCode: string, setting: Setting) {
-    this.code = roomCode
-    this.host = host
-    this.setting = setting
-    this.players.push(host)
-    this.sendWelcomeMessage(host)
-    this.updatePlayers()
-  }
-
-  static getRoomByCode(roomCode: string): Room | undefined {
-    return Room.rooms.get(roomCode)
-  }
-
   // 플레이어 목록 업데이트
-  updatePlayers(): void {
-    this.players.forEach((player) => {
+  updatePlayers(room: RoomData): void {
+    room.players.forEach((player) => {
       sendMessage(player.socket, 'players_updated', {
-        hostId: this.host.id,
-        players: this.players.map((p) => p.getPublic()),
+        hostId: room.host.id,
+        players: room.players,
       })
     })
   }
 
   // 플레이어 추가
-  addPlayer(player: Player): void {
-    this.players.push(player)
-    this.sendWelcomeMessage(player)
-    this.updatePlayers()
+  join(code: string, socket: WebSocket, UUID: string, name: string): void {
+    let player = playerRepository.findByUUID(UUID)
+    if (!player) {
+      player = playerRepository.create({ UUID, name, socket })
+    }
+
+    let room = roomRepository.findByCode(code)
+    if (!room) room = this.createRoom(player, DEFAULT_SETTING, code)
+    else room.players.push(player)
+
+    this.sendWelcomeMessage(room, player)
+    this.updatePlayers(room)
+  }
+
+  joinRandom(socket: WebSocket, UUID: string, name: string): void {
+    let player = playerRepository.findByUUID(UUID)
+    if (!player) {
+      player = playerRepository.create({ UUID, name, socket })
+    }
+
+    let room = this.getRandomRoom()
+    if (!room) room = this.createRoom(player, DEFAULT_SETTING)
+    else room.players.push(player)
+
+    this.sendWelcomeMessage(room, player)
+    this.updatePlayers(room)
   }
 
   // 플레이어 제거
-  removePlayer(player?: Player): void {
-    if (!player) return
-    this.players = this.players.filter((p) => p.id !== player.id)
-    if (this.players.length === 0) {
-      Room.rooms.delete(this.code)
+  removePlayer(room: RoomData, playerId: number): void {
+    if (!playerId) return
+    room.players = room.players.filter((p) => p.id !== playerId)
+    if (room.players.length === 0) {
+      roomRepository.delete(room.id)
     } else {
-      if (this.host.id === player.id) this.host = this.players[0]
-      this.updatePlayers()
+      if (room.host.id === playerId) room.host = room.players[0]
+      this.updatePlayers(room)
     }
   }
 
-  sendWelcomeMessage(player: Player): void {
-    sendMessage(player.socket, 'welcome', { userId: player.id, roomCode: this.code })
+  sendWelcomeMessage(room: RoomData, player: PlayerData): void {
+    sendMessage(player.socket, 'welcome', { roomCode: room.code })
   }
 }
 
-export { Room }
+const roomService = new RoomService()
+
+export { roomService }

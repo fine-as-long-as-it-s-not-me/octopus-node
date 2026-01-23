@@ -1,14 +1,6 @@
-import { Player } from './PlayerService'
-import { Room } from './RoomService'
 import { GamePhaseType } from './types'
 
-const games = new Map<string, Game>()
-
-class Game {
-  id: string
-  totalRounds: number
-  room: Room
-  scores = new Map<Player, number>()
+class GameService {
   phaseHandlers = {
     waiting: this.handleWaitingPhase,
     keyword: this.handleKeywordPhase,
@@ -18,16 +10,6 @@ class Game {
     voteResult: this.handleVoteResultPhase,
     guessing: this.handleGuessingPhase,
     result: this.handleResultPhase,
-  }
-
-  constructor(room: Room, id: string, totalRounds: number) {
-    this.room = room
-    this.id = id
-    this.totalRounds = totalRounds
-
-    this.room.players.forEach((player) => {
-      this.scores.set(player, 0)
-    })
   }
 
   updatePhase(state: GamePhaseType): void {
@@ -79,4 +61,6 @@ class Game {
   }
 }
 
-export { Game, games }
+const gameService = new GameService()
+
+export { gameService }

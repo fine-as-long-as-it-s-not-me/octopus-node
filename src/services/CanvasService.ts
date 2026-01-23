@@ -1,19 +1,16 @@
+import { CanvasData } from '../data/CanvasData'
 import { Stroke } from './types'
 
-class Canvas {
-  strokes: Stroke[]
-  backgroundColor: string
-
-  constructor() {
-    this.strokes = []
-    this.backgroundColor = '#FFFFFF'
+class CanvasService {
+  addStroke(canvas: CanvasData, stroke: Stroke): void {
+    canvas.strokes.push(stroke)
   }
 
-  addStroke(stroke: Stroke): void {
-    this.strokes.push(stroke)
-  }
-
-  clearCanvas(): void {
-    this.strokes = []
+  clearCanvas(canvas: CanvasData): void {
+    canvas.strokes = []
   }
 }
+
+const canvasService = new CanvasService()
+
+export { canvasService }

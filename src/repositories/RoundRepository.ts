@@ -1,3 +1,0 @@
-class RoundRepository {}
-
-export { RoundRepository }

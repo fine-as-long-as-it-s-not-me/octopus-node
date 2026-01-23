@@ -1,26 +1,14 @@
 import { type WebSocket } from 'ws'
+import { playerRepository } from '../repositories/PlayerRepository'
 
-class Player {
-  static nextId = 1
-
-  id: string
-  UUID: string
-  name: string
-  socket: WebSocket
-
-  constructor(UUID: string, name: string, socket: WebSocket) {
-    this.id = (Player.nextId++).toString()
-    this.UUID = UUID
-    this.name = name
-    this.socket = socket
-  }
-
-  getPublic() {
-    return {
-      id: this.id,
-      name: this.name,
-    }
+class PlayerService {
+  findOrCreatePlayer(socket: WebSocket, UUID: string, name: string) {
+    let player = playerRepository.findByUUID(UUID)
+    if (!player) player = playerRepository.create({ UUID, name, socket })
+    return player
   }
 }
 
-export { Player }
+const playerService = new PlayerService()
+
+export { playerService }

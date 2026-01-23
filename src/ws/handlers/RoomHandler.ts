@@ -1,6 +1,9 @@
-import { Player } from '../../services/PlayerService'
-import { Room } from '../../services/RoomService'
-import { sendMessage } from '../../utils/message'
+import { DEFAULT_SETTING } from '../../consts'
+import { PlayerData } from '../../data/PlayerData'
+import { playerRepository } from '../../repositories/PlayerRepository'
+import { roomRepository } from '../../repositories/RoomRepository'
+import { playerService } from '../../services/PlayerService'
+import { roomService } from '../../services/RoomService'
 import { SubTypeHandlerMap } from '../types'
 
 type RoomSettings = {
@@ -53,27 +56,21 @@ export const roomHandlers: SubTypeHandlerMap<RoomHandlerDataMap> = {
   join(socket, data: RoomJoinData) {
     // 대기방 입장
     const { roomCode, UUID, name } = data
-    const player = new Player(UUID, name, socket)
-
-    let room = Room.getRoomByCode(roomCode)
-    if (!room) room = Room.createRoom(player, roomCode)
-    else room.addPlayer(player)
+    roomService.join(roomCode, socket, UUID, name)
   },
   join_random(socket, data: RoomRandomJoinData) {
     // 랜덤 대기방 입장
     const { UUID, name } = data
-    const player = new Player(UUID, name, socket)
-
-    let room = Room.getRandomRoom()
-    if (!room) room = Room.createRoom(player)
-    else room.addPlayer(player)
+    roomService.joinRandom(socket, UUID, name)
   },
   leave(socket, data: RoomLeaveData) {
     // 대기방 나가기
     const { roomCode } = data
-    const room = Room.getRoomByCode(roomCode)
+    const room = roomRepository.findByCode(roomCode)
     if (!room) return
-    room.removePlayer(room.players.find((p) => p.socket === socket))
+    const player = room.players.find((p) => p.socket === socket)
+    if (!player) return
+    roomService.removePlayer(room, player.id)
   },
   delete_keyword(socket, data: RoomDeleteKeywordData) {
     // 등록된 커스텀 제시어 제거

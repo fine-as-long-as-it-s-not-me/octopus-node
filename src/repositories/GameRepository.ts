@@ -1,3 +1,8 @@
-class GameRepository {}
+import { GameData } from '../data/GameData'
+import { BaseRepository } from './BaseRepository'
 
-export { GameRepository }
+class GameRepository extends BaseRepository<GameData> {}
+
+const gameRepository = new GameRepository('games')
+
+export { gameRepository }
