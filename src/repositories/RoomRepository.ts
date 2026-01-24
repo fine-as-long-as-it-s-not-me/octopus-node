@@ -1,7 +1,7 @@
 import { DEFAULT_SETTING } from '../consts'
 import { PlayerData } from '../data/PlayerData'
 import { RoomData } from '../data/RoomData'
-import { Setting } from '../data/types'
+import { Settings } from '../data/types'
 import { BaseRepository } from './BaseRepository'
 
 class RoomRepository extends BaseRepository<RoomData> {
@@ -12,7 +12,7 @@ class RoomRepository extends BaseRepository<RoomData> {
   }: {
     host: PlayerData
     code?: string
-    setting?: Setting
+    setting?: Settings
   }): RoomData {
     let room = new RoomData(host, setting)
 

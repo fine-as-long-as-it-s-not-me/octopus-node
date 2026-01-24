@@ -5,10 +5,10 @@ import { playerRepository } from '../repositories/PlayerRepository'
 import { roomRepository } from '../repositories/RoomRepository'
 import { DEFAULT_SETTING } from '../consts'
 import { playerService } from './PlayerService'
-import { Setting } from '../data/types'
+import { Settings } from '../data/types'
 
 class RoomService {
-  createRoom(host: PlayerData, setting: Setting, code?: string) {
+  createRoom(host: PlayerData, setting: Settings, code?: string) {
     const room = roomRepository.create({ host, code, setting })
     this.sendWelcomeMessage(room, host)
     this.updatePlayers(room)
@@ -19,7 +19,7 @@ class RoomService {
   getRandomRoom(): RoomData | undefined {
     const publicRooms = Array.from(
       roomRepository.search((room) => {
-        return room.setting.roomType === 'public' && !room.game
+        return room.setting.isPublic && !room.game
       }),
     )
     if (publicRooms.length === 0) return undefined

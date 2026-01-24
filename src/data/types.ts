@@ -6,13 +6,18 @@ export interface Chat {
   timestamp: number
 }
 
-export interface Setting {
+export type Languages = 'en' | 'ko'
+
+export interface Settings {
   rounds: number
   maxPlayers: number
   liars: number
   drawingTime: number
-  customWords: boolean
-  roomType: 'public' | 'private'
+  useCustomWord: boolean
+  isCustomWordVoteOpen: boolean
+  customWordMinVotes: number
+  isPublic: boolean
+  language: Languages
 }
 
 export interface Stroke {
