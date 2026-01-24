@@ -1,4 +1,4 @@
-import { ChangableSettings } from '../../data/types'
+import { ChangeableSettings } from '../../data/types'
 import { roomService } from '../../services/RoomService'
 import { SubTypeHandlerMap } from '../types'
 
@@ -26,11 +26,11 @@ type RoomDeleteKeywordRequest = {
 }
 
 type RoomSettingsUpdatedRequest = {
-  settings: ChangableSettings
+  settings: ChangeableSettings
 }
 
 type RoomCreateRequest = {
-  settings: ChangableSettings
+  settings: ChangeableSettings
 }
 
 type RoomHandlerRequestMap = {

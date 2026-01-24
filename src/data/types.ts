@@ -20,7 +20,7 @@ export interface Settings {
   lang: Language
 }
 
-export type ChangableSettings = Omit<
+export type ChangeableSettings = Omit<
   Settings,
   'lang' | 'isCustomWordVoteOpen' | 'customWordMinVotes' | 'liars'
 >

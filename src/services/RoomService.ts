@@ -5,11 +5,11 @@ import { playerRepository } from '../repositories/PlayerRepository'
 import { roomRepository } from '../repositories/RoomRepository'
 import { DEFAULT_SETTING } from '../consts'
 import { playerService } from './PlayerService'
-import { ChangableSettings, Language } from '../data/types'
+import { ChangeableSettings, Language } from '../data/types'
 import { sendSocketMessage } from '../lib/socket'
 
 class RoomService {
-  createRoom(socket: WebSocket, settings?: ChangableSettings, code?: string) {
+  createRoom(socket: WebSocket, settings?: ChangeableSettings, code?: string) {
     const host = playerRepository.findBySocket(socket)
     if (!host) {
       sendSocketMessage(socket, 'unregistered')
@@ -29,7 +29,7 @@ class RoomService {
     return room
   }
 
-  changeSettings(socket: WebSocket, settings: ChangableSettings): void {
+  changeSettings(socket: WebSocket, settings: ChangeableSettings): void {
     const player = playerRepository.findBySocket(socket)
     if (!player || !player.roomId) return sendSocketMessage(socket, 'error')
 
