@@ -1,7 +1,7 @@
 import { Settings } from './data/types'
 
 export const MAX_PLAYERS = 12
-export const DEFAULT_SETTING: Settings = {
+export const DEFAULT_SETTING: Omit<Settings, 'lang'> = {
   rounds: 3,
   maxPlayers: 8,
   liars: 1,
@@ -10,5 +10,4 @@ export const DEFAULT_SETTING: Settings = {
   isCustomWordVoteOpen: false,
   customWordMinVotes: 2,
   isPublic: true,
-  language: 'en',
 }

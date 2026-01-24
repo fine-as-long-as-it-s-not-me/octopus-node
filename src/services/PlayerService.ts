@@ -1,14 +1,24 @@
 import { WebSocket } from 'ws'
 import { playerRepository } from '../repositories/PlayerRepository'
+import { Language } from '../data/types'
+import { sendSocketMessage } from '../lib/socket'
 
 class PlayerService {
-  login(socket: WebSocket, UUID: string, name: string) {
+  changeLanguage(socket: WebSocket, lang: Language): void {
+    const player = playerRepository.findBySocket(socket)
+    if (!player) return sendSocketMessage(socket, 'unregistered')
+
+    player.lang = lang
+    this.sendMessage(player.id, 'languageChanged', { lang }) // no use in client
+  }
+
+  login(socket: WebSocket, UUID: string, name: string, lang: Language) {
     let player = playerRepository.findByUUID(UUID)
     if (player) {
-      player.login(name, socket)
+      playerRepository.login(player, name, socket)
       console.log(`Player logged in: ${name} (${UUID})`)
     } else {
-      player = playerRepository.create({ UUID, name, socket })
+      player = playerRepository.create({ UUID, name, socket, lang })
       console.log(`New player registered: ${name} (${UUID})`)
     }
 
@@ -27,8 +37,7 @@ class PlayerService {
 
     console.log('Sending message:', { type, data }, player.UUID)
 
-    const message = JSON.stringify({ type, data })
-    player.socket.send(message, (err) => {
+    sendSocketMessage(player.socket, type, data, (err) => {
       if (err) {
         if (player.socket.readyState === WebSocket.CLOSED) this.logout(player.id)
       }

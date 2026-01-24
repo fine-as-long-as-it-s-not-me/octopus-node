@@ -1,20 +1,19 @@
-import { DEFAULT_SETTING } from '../consts'
 import { PlayerData } from '../data/PlayerData'
 import { RoomData } from '../data/RoomData'
-import { Settings } from '../data/types'
+import { Language, Settings } from '../data/types'
 import { BaseRepository } from './BaseRepository'
 
 class RoomRepository extends BaseRepository<RoomData> {
   create({
     host,
     code: roomCode,
-    setting = DEFAULT_SETTING,
+    settings,
   }: {
     host: PlayerData
     code?: string
-    setting?: Settings
+    settings: Settings
   }): RoomData {
-    let room = new RoomData(host, setting)
+    let room = new RoomData(host, settings)
 
     let code = roomCode
     if (code) {
@@ -59,8 +58,9 @@ class RoomRepository extends BaseRepository<RoomData> {
     if (!room) throw new Error('Room not found')
 
     const player = room.players.find((p) => p.id === playerId)
-    if (player) player.roomId = null
+    if (!player) throw new Error('Player not found in room')
 
+    player.roomId = null
     room.players = room.players.filter((p) => p.id !== playerId)
 
     if (room.players.length === 0) {
@@ -68,6 +68,17 @@ class RoomRepository extends BaseRepository<RoomData> {
     } else if (room.host.id === playerId) {
       room.host = room.players[0]
     }
+  }
+
+  getRandomRoom(lang: Language): RoomData | undefined {
+    const publicRooms = Array.from(
+      roomRepository.search((room) => {
+        return room.settings.isPublic && !room.game && room.settings.lang === lang
+      }),
+    )
+    if (publicRooms.length === 0) return undefined
+    const randomIndex = Math.floor(Math.random() * publicRooms.length)
+    return publicRooms[randomIndex]
   }
 }
 

@@ -1,63 +1,75 @@
-import { Settings } from '../../data/types'
+import { ChangableSettings } from '../../data/types'
 import { roomService } from '../../services/RoomService'
 import { SubTypeHandlerMap } from '../types'
 
-type RoomJoinData = {
+type RoomJoinRequest = {
   roomCode: string
   UUID: string
   name: string
 }
 
-type RoomRandomJoinData = {
+type RoomRandomJoinRequest = {
   UUID: string
   name: string
 }
 
-type RoomLeaveData = {
+type RoomLeaveRequest = {
   roomCode: string
 }
 
-type RoomVoteKeywordData = {
+type RoomVoteKeywordRequest = {
   keyword: string
 }
 
-type RoomDeleteKeywordData = {
+type RoomDeleteKeywordRequest = {
   keyword: string
 }
 
-type RoomSettingsUpdatedData = {
-  settings: Omit<Settings, 'language'>
+type RoomSettingsUpdatedRequest = {
+  settings: ChangableSettings
 }
 
-type RoomHandlerDataMap = {
-  join: RoomJoinData
-  leave: RoomLeaveData
-  delete_keyword: RoomDeleteKeywordData
-  vote_keyword: RoomVoteKeywordData
-  update_setting: RoomSettingsUpdatedData
-  join_random: RoomRandomJoinData
+type RoomCreateRequest = {
+  settings: ChangableSettings
 }
 
-export const roomHandlers: SubTypeHandlerMap<RoomHandlerDataMap> = {
-  join(socket, data: RoomJoinData) {
+type RoomHandlerRequestMap = {
+  join: RoomJoinRequest
+  leave: RoomLeaveRequest
+  create: RoomCreateRequest
+  delete_keyword: RoomDeleteKeywordRequest
+  vote_keyword: RoomVoteKeywordRequest
+  change_settings: RoomSettingsUpdatedRequest
+  join_random: RoomRandomJoinRequest
+}
+
+export const roomHandlers: SubTypeHandlerMap<RoomHandlerRequestMap> = {
+  join(socket, data: RoomJoinRequest) {
     const { roomCode, UUID, name } = data
     roomService.join(roomCode, socket, UUID, name)
   },
-  join_random(socket, data: RoomRandomJoinData) {
+  join_random(socket, data: RoomRandomJoinRequest) {
     const { UUID, name } = data
     roomService.joinRandom(socket, UUID, name)
   },
-  leave(socket, data: RoomLeaveData) {
+  leave(socket, data: RoomLeaveRequest) {
     const { roomCode } = data
     roomService.leave(roomCode, socket)
   },
-  vote_keyword(socket, data: RoomVoteKeywordData) {
+  create(socket, data: RoomCreateRequest) {
+    // 방 생성
+    const { settings } = data
+    roomService.createRoom(socket, settings)
+  },
+  vote_keyword(socket, data: RoomVoteKeywordRequest) {
     // 커스텀 제시어 투표
   },
-  delete_keyword(socket, data: RoomDeleteKeywordData) {
+  delete_keyword(socket, data: RoomDeleteKeywordRequest) {
     // 등록된 커스텀 제시어 제거
   },
-  update_setting(socket, data: RoomSettingsUpdatedData) {
+  change_settings(socket, data: RoomSettingsUpdatedRequest) {
     // 설정 변경
+    const { settings } = data
+    roomService.changeSettings(socket, settings)
   },
 }

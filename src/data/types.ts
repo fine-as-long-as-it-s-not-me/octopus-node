@@ -6,7 +6,7 @@ export interface Chat {
   timestamp: number
 }
 
-export type Languages = 'en' | 'ko'
+export type Language = 'en' | 'ko'
 
 export interface Settings {
   rounds: number
@@ -17,8 +17,13 @@ export interface Settings {
   isCustomWordVoteOpen: boolean
   customWordMinVotes: number
   isPublic: boolean
-  language: Languages
+  lang: Language
 }
+
+export type ChangableSettings = Omit<
+  Settings,
+  'lang' | 'isCustomWordVoteOpen' | 'customWordMinVotes' | 'liars'
+>
 
 export interface Stroke {
   id: string

@@ -8,17 +8,17 @@ class RoomData {
 
   id: number
   code?: string
-  setting: Settings
+  settings: Settings
   players: PlayerData[] = []
   customWords = new Map<string, number>()
   chats: Chat[] = []
   host: PlayerData
   game?: GameData
 
-  constructor(host: PlayerData, setting: Settings) {
+  constructor(host: PlayerData, settings: Settings) {
     this.id = RoomData.nextId++
     this.host = host
-    this.setting = setting
+    this.settings = settings
   }
 }
 

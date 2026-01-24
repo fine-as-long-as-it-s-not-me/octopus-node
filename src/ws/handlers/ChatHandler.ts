@@ -1,15 +1,15 @@
 import { SubTypeHandlerMap } from '../types'
 
-type ChatSendData = {
+type ChatSendHandler = {
   text: string
 }
 
-type ChatHandlerDataMap = {
-  send: ChatSendData
+type ChatHandlerHandlerMap = {
+  send: ChatSendHandler
 }
 
-export const chatHandlers: SubTypeHandlerMap<ChatHandlerDataMap> = {
-  send(socket, data: ChatSendData) {
+export const chatHandlers: SubTypeHandlerMap<ChatHandlerHandlerMap> = {
+  send(socket, data: ChatSendHandler) {
     // 채팅 보내기
   },
 }

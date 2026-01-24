@@ -1,16 +1,16 @@
 import { SubTypeHandlerMap } from '../types'
 
-type KickVoteData = {
+type KickVoteHandler = {
   targetId: string
   agree: boolean
 }
 
-type KickHandlerDataMap = {
-  vote: KickVoteData
+type KickHandlerHandlerMap = {
+  vote: KickVoteHandler
 }
 
-export const kickHandlers: SubTypeHandlerMap<KickHandlerDataMap> = {
-  vote(socket, data: KickVoteData) {
+export const kickHandlers: SubTypeHandlerMap<KickHandlerHandlerMap> = {
+  vote(socket, data: KickVoteHandler) {
     // 강퇴 투표
   },
 }

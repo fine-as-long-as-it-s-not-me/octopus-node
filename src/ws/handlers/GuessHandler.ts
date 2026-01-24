@@ -1,15 +1,15 @@
 import { SubTypeHandlerMap } from '../types'
 
-type GuessSubmitData = {
+type GuessSubmitHandler = {
   guessKeyword: string
 }
 
-type GuessHandlerDataMap = {
-  submit: GuessSubmitData
+type GuessHandlerHandlerMap = {
+  submit: GuessSubmitHandler
 }
 
-export const guessHandlers: SubTypeHandlerMap<GuessHandlerDataMap> = {
-  submit(socket, data: GuessSubmitData) {
+export const guessHandlers: SubTypeHandlerMap<GuessHandlerHandlerMap> = {
+  submit(socket, data: GuessSubmitHandler) {
     // 추리하기
   },
 }

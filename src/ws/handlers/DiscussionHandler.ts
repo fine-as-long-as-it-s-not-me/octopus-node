@@ -1,18 +1,18 @@
 import { SubTypeHandlerMap } from '../types'
 
-type DiscussionIncreaseTimeData = Record<string, never>
-type DiscussionDecreaseTimeData = Record<string, never>
+type DiscussionIncreaseTimeHandler = Record<string, never>
+type DiscussionDecreaseTimeHandler = Record<string, never>
 
-type DiscussionHandlerDataMap = {
-  increase_time: DiscussionIncreaseTimeData
-  decrease_time: DiscussionDecreaseTimeData
+type DiscussionHandlerHandlerMap = {
+  increase_time: DiscussionIncreaseTimeHandler
+  decrease_time: DiscussionDecreaseTimeHandler
 }
 
-export const discussionHandlers: SubTypeHandlerMap<DiscussionHandlerDataMap> = {
-  increase_time(socket, data: DiscussionIncreaseTimeData) {
+export const discussionHandlers: SubTypeHandlerMap<DiscussionHandlerHandlerMap> = {
+  increase_time(socket, data: DiscussionIncreaseTimeHandler) {
     // 토론 시간 늘리기 요청
   },
-  decrease_time(socket, data: DiscussionDecreaseTimeData) {
+  decrease_time(socket, data: DiscussionDecreaseTimeHandler) {
     // 토론 시간 줄이기 요청
   },
 }

@@ -3,10 +3,17 @@ import { BaseRepository } from './BaseRepository'
 import { PlayerData } from '../data/PlayerData'
 import { roomRepository } from './RoomRepository'
 import { roomService } from '../services/RoomService'
+import { playerService } from '../services/PlayerService'
+import { sendSocketMessage } from '../lib/socket'
 
 class PlayerRepository extends BaseRepository<PlayerData> {
-  create({ UUID, name, socket }: Pick<PlayerData, 'UUID' | 'name' | 'socket'>): PlayerData {
-    const player = new PlayerData(UUID, name, socket)
+  create({
+    UUID,
+    name,
+    socket,
+    lang,
+  }: Pick<PlayerData, 'UUID' | 'name' | 'socket' | 'lang'>): PlayerData {
+    const player = new PlayerData(UUID, name, socket, lang, this.getHeartbeatInterval(socket))
     this.records.set(player.id, player)
 
     console.log(Array.from(this.records.values()).map((p) => p.name))
@@ -14,13 +21,27 @@ class PlayerRepository extends BaseRepository<PlayerData> {
     return player
   }
 
+  login(player: PlayerData, name: string, socket: WebSocket) {
+    player.name = name
+    player.socket = socket
+    if (player.heartbeatInterval) clearInterval(player.heartbeatInterval)
+    player.heartbeatInterval = this.getHeartbeatInterval(player.socket)
+  }
+
+  getHeartbeatInterval(socket: WebSocket) {
+    return setInterval(() => {
+      sendSocketMessage(socket, 'player', 'heartbeat')
+    }, 5000)
+  }
+
   logout(playerId: number): void {
     const player = this.findById(playerId)
     if (!player) return
 
+    clearInterval(player.heartbeatInterval)
+
     this.records.delete(playerId)
-    player.logout()
-    if (player.roomId) roomService.removePlayer(player.roomId, player.id)
+    if (player.roomId) roomRepository.removePlayer(player.roomId, player.id)
 
     console.log(`Player logged out: ${player.name} (${player.UUID})`)
   }

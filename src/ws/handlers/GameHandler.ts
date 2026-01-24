@@ -1,13 +1,13 @@
 import { SubTypeHandlerMap } from '../types'
 
-type GameStartData = Record<string, never>
+type GameStartHandler = Record<string, never>
 
-type GameHandlerDataMap = {
-  start: GameStartData
+type GameHandlerHandlerMap = {
+  start: GameStartHandler
 }
 
-export const gameHandlers: SubTypeHandlerMap<GameHandlerDataMap> = {
-  start(socket, data: GameStartData) {
+export const gameHandlers: SubTypeHandlerMap<GameHandlerHandlerMap> = {
+  start(socket, data: GameStartHandler) {
     // 게임 시작하기
   },
 }
