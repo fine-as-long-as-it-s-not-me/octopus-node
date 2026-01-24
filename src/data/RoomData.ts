@@ -7,7 +7,7 @@ class RoomData {
   static nextCode = 1000
 
   id: number
-  code?: string
+  code: string
   settings: Settings
   players: PlayerData[] = []
   customWords = new Map<string, number>()
@@ -15,10 +15,11 @@ class RoomData {
   host: PlayerData
   game?: GameData
 
-  constructor(host: PlayerData, settings: Settings) {
+  constructor(host: PlayerData, settings: Settings, code: string) {
     this.id = RoomData.nextId++
     this.host = host
     this.settings = settings
+    this.code = code
   }
 }
 

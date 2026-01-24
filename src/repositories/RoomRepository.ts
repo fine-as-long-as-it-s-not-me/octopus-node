@@ -13,14 +13,11 @@ class RoomRepository extends BaseRepository<RoomData> {
     code?: string
     settings: Settings
   }): RoomData {
-    let room = new RoomData(host, settings)
-
     let code = roomCode
     if (code) {
       if (this.findByCode(code)) {
         throw new Error('Room code already exists')
       }
-      room.code = code
     } else {
       code = RoomData.nextCode.toString()
       while (this.findByCode(code)) {
@@ -28,10 +25,12 @@ class RoomRepository extends BaseRepository<RoomData> {
       }
     }
 
-    room.code = code
+    const room = new RoomData(host, settings, code)
     this.records.set(room.id, room)
+
     const res = this.findById(room.id)
     if (!res) throw new Error('Failed to create room')
+
     this.addPlayer(room.id, host)
     return res
   }
@@ -72,9 +71,7 @@ class RoomRepository extends BaseRepository<RoomData> {
 
   getRandomRoom(lang: Language): RoomData | undefined {
     const publicRooms = Array.from(
-      roomRepository.search((room) => {
-        return room.settings.isPublic && !room.game && room.settings.lang === lang
-      }),
+      this.search((room) => room.settings.isPublic && !room.game && room.settings.lang === lang),
     )
     if (publicRooms.length === 0) return undefined
     const randomIndex = Math.floor(Math.random() * publicRooms.length)

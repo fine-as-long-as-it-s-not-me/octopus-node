@@ -30,7 +30,14 @@ class PlayerRepository extends BaseRepository<PlayerData> {
 
   getHeartbeatInterval(socket: WebSocket) {
     return setInterval(() => {
-      sendSocketMessage(socket, 'player', 'heartbeat')
+      sendSocketMessage(socket, 'player', 'heartbeat', (err) => {
+        if (err) {
+          if (socket.readyState === WebSocket.CLOSED) {
+            const player = playerRepository.findBySocket(socket)
+            if (player) playerService.logout(player.id)
+          }
+        }
+      })
     }, 5000)
   }
 
@@ -40,8 +47,12 @@ class PlayerRepository extends BaseRepository<PlayerData> {
 
     clearInterval(player.heartbeatInterval)
 
+    if (player.roomId) {
+      const room = roomRepository.findById(player.roomId)
+      if (room) roomService.leave(room.code, player.socket)
+    }
+
     this.records.delete(playerId)
-    if (player.roomId) roomRepository.removePlayer(player.roomId, player.id)
 
     console.log(`Player logged out: ${player.name} (${player.UUID})`)
   }

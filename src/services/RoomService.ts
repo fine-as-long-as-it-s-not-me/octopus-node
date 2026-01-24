@@ -5,7 +5,7 @@ import { playerRepository } from '../repositories/PlayerRepository'
 import { roomRepository } from '../repositories/RoomRepository'
 import { DEFAULT_SETTING } from '../consts'
 import { playerService } from './PlayerService'
-import { ChangeableSettings, Language } from '../data/types'
+import { ChangeableSettings } from '../data/types'
 import { sendSocketMessage } from '../lib/socket'
 
 class RoomService {
