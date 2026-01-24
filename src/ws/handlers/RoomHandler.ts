@@ -1,80 +1,75 @@
-import { DEFAULT_SETTING } from '../../consts'
-import { PlayerData } from '../../data/PlayerData'
-import { playerRepository } from '../../repositories/PlayerRepository'
-import { roomRepository } from '../../repositories/RoomRepository'
-import { playerService } from '../../services/PlayerService'
+import { ChangeableSettings } from '../../data/types'
 import { roomService } from '../../services/RoomService'
 import { SubTypeHandlerMap } from '../types'
 
-type RoomSettings = {
-  roundCount: number
-  drawTimeLimit: number
-  isSecretRoom: boolean
-  language: string
-  wordPoolSize: number
-  isVoteOpen: boolean
-  minimumVotes: number
-}
-
-type RoomJoinData = {
+type RoomJoinRequest = {
   roomCode: string
   UUID: string
   name: string
 }
 
-type RoomRandomJoinData = {
+type RoomRandomJoinRequest = {
   UUID: string
   name: string
 }
 
-type RoomLeaveData = {
+type RoomLeaveRequest = {
   roomCode: string
 }
 
-type RoomDeleteKeywordData = {
+type RoomVoteKeywordRequest = {
   keyword: string
 }
 
-type RoomVoteKeywordData = {
+type RoomDeleteKeywordRequest = {
   keyword: string
 }
 
-type RoomSettingsUpdatedData = {
-  settings: RoomSettings
+type RoomSettingsUpdatedRequest = {
+  settings: ChangeableSettings
 }
 
-type RoomHandlerDataMap = {
-  join: RoomJoinData
-  leave: RoomLeaveData
-  delete_keyword: RoomDeleteKeywordData
-  vote_keyword: RoomVoteKeywordData
-  update_setting: RoomSettingsUpdatedData
-  join_random: RoomRandomJoinData
+type RoomCreateRequest = {
+  settings: ChangeableSettings
 }
 
-export const roomHandlers: SubTypeHandlerMap<RoomHandlerDataMap> = {
-  join(socket, data: RoomJoinData) {
-    // 대기방 입장
+type RoomHandlerRequestMap = {
+  join: RoomJoinRequest
+  leave: RoomLeaveRequest
+  create: RoomCreateRequest
+  delete_keyword: RoomDeleteKeywordRequest
+  vote_keyword: RoomVoteKeywordRequest
+  change_settings: RoomSettingsUpdatedRequest
+  join_random: RoomRandomJoinRequest
+}
+
+export const roomHandlers: SubTypeHandlerMap<RoomHandlerRequestMap> = {
+  join(socket, data: RoomJoinRequest) {
     const { roomCode, UUID, name } = data
     roomService.join(roomCode, socket, UUID, name)
   },
-  join_random(socket, data: RoomRandomJoinData) {
-    // 랜덤 대기방 입장
+  join_random(socket, data: RoomRandomJoinRequest) {
     const { UUID, name } = data
     roomService.joinRandom(socket, UUID, name)
   },
-  leave(socket, data: RoomLeaveData) {
-    // 대기방 나가기
+  leave(socket, data: RoomLeaveRequest) {
     const { roomCode } = data
     roomService.leave(roomCode, socket)
   },
-  delete_keyword(socket, data: RoomDeleteKeywordData) {
-    // 등록된 커스텀 제시어 제거
+  create(socket, data: RoomCreateRequest) {
+    // 방 생성
+    const { settings } = data
+    roomService.createRoom(socket, settings)
   },
-  vote_keyword(socket, data: RoomVoteKeywordData) {
+  vote_keyword(socket, data: RoomVoteKeywordRequest) {
     // 커스텀 제시어 투표
   },
-  update_setting(socket, data: RoomSettingsUpdatedData) {
+  delete_keyword(socket, data: RoomDeleteKeywordRequest) {
+    // 등록된 커스텀 제시어 제거
+  },
+  change_settings(socket, data: RoomSettingsUpdatedRequest) {
     // 설정 변경
+    const { settings } = data
+    roomService.changeSettings(socket, settings)
   },
 }

@@ -5,49 +5,64 @@ import { playerRepository } from '../repositories/PlayerRepository'
 import { roomRepository } from '../repositories/RoomRepository'
 import { DEFAULT_SETTING } from '../consts'
 import { playerService } from './PlayerService'
-import { Setting } from '../data/types'
+import { ChangeableSettings } from '../data/types'
+import { sendSocketMessage } from '../lib/socket'
 
 class RoomService {
-  createRoom(host: PlayerData, setting: Setting, code?: string) {
-    const room = roomRepository.create({ host, code, setting })
+  createRoom(socket: WebSocket, settings?: ChangeableSettings, code?: string) {
+    const host = playerRepository.findBySocket(socket)
+    if (!host) {
+      sendSocketMessage(socket, 'unregistered')
+      return null
+    }
+
+    // 설정한 세팅과, 기본 세팅 조합해서 방 생성
+    const room = roomRepository.create({
+      host,
+      code,
+      settings: { ...DEFAULT_SETTING, ...settings, lang: host.lang },
+    })
     this.sendWelcomeMessage(room, host)
-    this.updatePlayers(room)
+    this.updatePlayers(room.id)
+    this.updateSettings(room.id)
 
     return room
   }
 
-  getRandomRoom(): RoomData | undefined {
-    const publicRooms = Array.from(
-      roomRepository.search((room) => {
-        return room.setting.roomType === 'public' && !room.game
-      }),
-    )
-    if (publicRooms.length === 0) return undefined
-    const randomIndex = Math.floor(Math.random() * publicRooms.length)
-    return publicRooms[randomIndex]
+  changeSettings(socket: WebSocket, settings: ChangeableSettings): void {
+    const player = playerRepository.findBySocket(socket)
+    if (!player || !player.roomId) return sendSocketMessage(socket, 'error')
+
+    let room = roomRepository.findById(player.roomId)
+    if (!room || room.host.id !== player.id) return sendSocketMessage(socket, 'error')
+
+    roomRepository.update(room.id, { settings: { ...room.settings, ...settings } })
+    this.updateSettings(room.id)
   }
 
   // 플레이어 추가
   join(code: string, socket: WebSocket, UUID: string, name: string): void {
     let player = playerRepository.findByUUID(UUID)
-    if (!player) player = playerRepository.create({ UUID, name, socket })
+    if (!player) return sendSocketMessage(socket, 'unregistered')
 
-    let room = roomRepository.findByCode(code)
-    if (!room) room = this.createRoom(player, DEFAULT_SETTING, code)
-    else {
+    const room = roomRepository.findByCode(code)
+    if (!room) {
+      this.createRoom(socket, undefined, code)
+    } else {
       roomRepository.addPlayer(room.id, player)
       this.sendWelcomeMessage(room, player)
-      this.updatePlayers(room)
+      this.updatePlayers(room.id)
+      this.updateSettings(room.id)
     }
   }
 
   joinRandom(socket: WebSocket, UUID: string, name: string): void {
     let player = playerRepository.findByUUID(UUID)
-    if (!player) player = playerRepository.create({ UUID, name, socket })
+    if (!player) return sendSocketMessage(socket, 'unregistered')
 
-    let room = this.getRandomRoom()
+    let room = roomRepository.getRandomRoom(player.lang)
     if (room && room.code) this.join(room.code, socket, UUID, name)
-    else this.createRoom(player, DEFAULT_SETTING)
+    else this.createRoom(socket)
   }
 
   // 대기방 나가기
@@ -58,24 +73,28 @@ class RoomService {
     const player = room.players.find((p) => p.socket === socket)
     if (!player) return
 
-    this.removePlayer(room.id, player.id)
+    roomRepository.removePlayer(room.id, player.id)
+    this.updatePlayers(room.id)
   }
 
-  // 플레이어 제거
-  removePlayer(roomId: number, playerId: number): void {
-    roomRepository.removePlayer(roomId, playerId)
+  //--- Socket Broadcasts---
 
+  updatePlayers(roomId: number): void {
     const room = roomRepository.findById(roomId)
-    if (room) this.updatePlayers(room)
-  }
-
-  // 플레이어 목록 업데이트
-  updatePlayers(room: RoomData): void {
+    if (!room) return
     this.sendMessage(room, 'players_updated', {
       hostUUID: room.host.UUID,
       players: room.players
         .map((p) => playerRepository.getResponseDTO(p.id))
         .filter((playerDTO) => playerDTO !== null),
+    })
+  }
+
+  updateSettings(roomId: number): void {
+    const room = roomRepository.findById(roomId)
+    if (!room) return
+    this.sendMessage(room, 'settings_updated', {
+      settings: room.settings,
     })
   }
 

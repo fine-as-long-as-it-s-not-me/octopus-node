@@ -1,5 +1,5 @@
 import { type WebSocket } from 'ws'
-import { playerService } from '../services/PlayerService'
+import { Language } from './types'
 
 class PlayerData {
   static nextId = 1
@@ -7,34 +7,25 @@ class PlayerData {
   id: number
   UUID: string
   name: string
+  lang: Language
   socket: WebSocket
-  #heartbeatInterval: NodeJS.Timeout
+  heartbeatInterval: NodeJS.Timeout
   roomId: number | null
 
-  constructor(UUID: string, name: string, socket: WebSocket) {
+  constructor(
+    UUID: string,
+    name: string,
+    socket: WebSocket,
+    lang: Language,
+    heartbeatInterval: NodeJS.Timeout,
+  ) {
     this.id = PlayerData.nextId++
     this.UUID = UUID
     this.name = name
     this.socket = socket
-    this.#heartbeatInterval = this.#getHeartbeatInterval()
+    this.lang = lang
     this.roomId = null
-  }
-
-  logout() {
-    clearInterval(this.#heartbeatInterval)
-  }
-
-  login(name: string, socket: WebSocket) {
-    this.name = name
-    this.socket = socket
-    if (this.#heartbeatInterval) clearInterval(this.#heartbeatInterval)
-    this.#heartbeatInterval = this.#getHeartbeatInterval()
-  }
-
-  #getHeartbeatInterval() {
-    return setInterval(() => {
-      playerService.sendMessage(this.id, 'player', 'heartbeat')
-    }, 5000)
+    this.heartbeatInterval = heartbeatInterval
   }
 }
 

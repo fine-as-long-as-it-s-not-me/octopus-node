@@ -1,16 +1,16 @@
 import { SubTypeHandlerMap } from '../types'
 
-type VoteCastData = {
+type VoteCastHandler = {
   round: number
   targetId: string
 }
 
-type VoteHandlerDataMap = {
-  cast: VoteCastData
+type VoteHandlerHandlerMap = {
+  cast: VoteCastHandler
 }
 
-export const voteHandlers: SubTypeHandlerMap<VoteHandlerDataMap> = {
-  cast(socket, data: VoteCastData) {
+export const voteHandlers: SubTypeHandlerMap<VoteHandlerHandlerMap> = {
+  cast(socket, data: VoteCastHandler) {
     // 유저가 투표
   },
 }

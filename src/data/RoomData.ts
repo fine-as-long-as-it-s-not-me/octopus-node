@@ -1,24 +1,25 @@
 import { GameData } from './GameData'
 import { PlayerData } from './PlayerData'
-import { Chat, Setting } from './types'
+import { Chat, Settings } from './types'
 
 class RoomData {
   static nextId = 1
   static nextCode = 1000
 
   id: number
-  code?: string
-  setting: Setting
+  code: string
+  settings: Settings
   players: PlayerData[] = []
   customWords = new Map<string, number>()
   chats: Chat[] = []
   host: PlayerData
   game?: GameData
 
-  constructor(host: PlayerData, setting: Setting) {
+  constructor(host: PlayerData, settings: Settings, code: string) {
     this.id = RoomData.nextId++
     this.host = host
-    this.setting = setting
+    this.settings = settings
+    this.code = code
   }
 }
 
