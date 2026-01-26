@@ -27,7 +27,9 @@ class CanvasService {
     if (!canvas) return console.log('Canvas not found')
 
     canvasRepository.update(canvas.id, { ...canvas, strokes: [...canvas.strokes, stroke] })
-    this.updateCanvas(room, canvas)
+    const updatedCanvas = canvasRepository.findById(canvas.id)
+    if (!updatedCanvas) return console.log('Canvas not found after update')
+    this.updateCanvas(room, updatedCanvas)
   }
 
   changeBackground(socket: WebSocket, color: string): void {
