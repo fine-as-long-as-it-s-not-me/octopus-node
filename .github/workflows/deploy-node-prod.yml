@@ -2,7 +2,7 @@ name: Deploy Node Prod (Blue-Green Routing)
 
 on:
   push:
-    branches: ["master"]
+    branches: ["main"]
 
 jobs:
   build-and-push:
