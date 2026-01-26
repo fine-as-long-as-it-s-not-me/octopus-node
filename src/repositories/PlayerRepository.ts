@@ -3,7 +3,6 @@ import { BaseRepository } from './BaseRepository'
 import { PlayerData } from '../data/PlayerData'
 import { roomRepository } from './RoomRepository'
 import { roomService } from '../services/RoomService'
-import { playerService } from '../services/PlayerService'
 import { sendSocketMessage } from '../lib/socket'
 
 class PlayerRepository extends BaseRepository<PlayerData> {
@@ -40,7 +39,7 @@ class PlayerRepository extends BaseRepository<PlayerData> {
     if (player.heartbeatInterval) clearInterval(player.heartbeatInterval)
     if (player.roomId) {
       const room = roomRepository.findById(player.roomId)
-      if (room) roomService.join(room.code, socket, player.UUID, name)
+      if (room) roomService.join(room.code, socket, player.UUID)
     }
     player.heartbeatInterval = this.getHeartbeatInterval(player.socket)
   }
@@ -82,7 +81,6 @@ class PlayerRepository extends BaseRepository<PlayerData> {
     if (!player) return null
 
     const room = player.roomId ? roomRepository.findById(player.roomId) : null
-    console.log(`find room for player ${player.name}:`, room ? room.code : 'no room')
 
     return {
       id: player.id,

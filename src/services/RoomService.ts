@@ -41,7 +41,7 @@ class RoomService {
   }
 
   // 플레이어 추가
-  join(code: string, socket: WebSocket, UUID: string, name: string): void {
+  join(code: string, socket: WebSocket, UUID: string): void {
     let player = playerRepository.findByUUID(UUID)
     if (!player) return sendSocketMessage(socket, 'unregistered')
 
@@ -56,12 +56,12 @@ class RoomService {
     }
   }
 
-  joinRandom(socket: WebSocket, UUID: string, name: string): void {
+  joinRandom(socket: WebSocket, UUID: string): void {
     let player = playerRepository.findByUUID(UUID)
     if (!player) return sendSocketMessage(socket, 'unregistered')
 
     let room = roomRepository.getRandomRoom(player.lang)
-    if (room && room.code) this.join(room.code, socket, UUID, name)
+    if (room && room.code) this.join(room.code, socket, UUID)
     else this.createRoom(socket)
   }
 
@@ -105,6 +105,19 @@ class RoomService {
 
   sendMessage(room: RoomData, type: string, data: any): void {
     for (const player of room.players) playerService.sendMessage(player.id, type, data)
+  }
+
+  addChatMessage(socket: WebSocket, text: string): void {
+    const player = playerRepository.findBySocket(socket)
+    if (!player || !player.roomId) return sendSocketMessage(socket, 'error')
+
+    const room = roomRepository.findById(player.roomId)
+    if (!room) return sendSocketMessage(socket, 'error')
+
+    this.sendMessage(room, 'chat_added', {
+      player: playerRepository.getResponseDTO(player.id),
+      text,
+    })
   }
 }
 

@@ -1,6 +1,8 @@
 import { CanvasData } from '../data/CanvasData'
 import { GameData } from '../data/GameData'
 import { RoomData } from '../data/RoomData'
+import { Language } from '../data/types'
+import keywords from '../domain/keywords'
 import { getNextPhase, getPhaseDuration } from '../lib/game'
 import { gameService } from '../services/GameService'
 import { BaseRepository } from './BaseRepository'
@@ -48,10 +50,9 @@ class GameRepository extends BaseRepository<GameData> {
     const game = this.findById(gameId)
     if (!game) return
 
-    // 라운드 초기화 로직
+    // 라운드 초기화
     game.round++
-    const { keyword, fakeWord } = this.getWords('exampleCategory')
-
+    const { keyword, fakeWord } = this.getWords(room.lang)
     ;[game.keyword, game.fakeWord] = [keyword, fakeWord]
 
     game.liars = [room.players[0].id] // 예시로 고정된 키워드 사용
@@ -62,11 +63,21 @@ class GameRepository extends BaseRepository<GameData> {
     console.log('game initialized: canvasId ', game.canvasId)
   }
 
-  getWords(category: string): { keyword: string; fakeWord: string } {
-    // 카테고리에 따른 단어 선택 로직 (예시로 고정된 단어 사용)
+  getWords(lang: Language): { category: string; keyword: string; fakeWord: string } {
+    // 카테고리에 따른 단어 선택
+    const category = Object.keys(keywords)[Math.floor(Math.random() * Object.keys(keywords).length)]
+    const wordList = keywords[category as keyof typeof keywords][lang]
+    const i1 = Math.floor(Math.random() * wordList.length)
+    let i2
+    while (i1 === (i2 = Math.floor(Math.random() * wordList.length))) {}
+
+    const keyword = wordList[i1]
+    const fakeWord = wordList[i2]
+
     return {
-      keyword: 'example',
-      fakeWord: 'fake',
+      category,
+      keyword,
+      fakeWord,
     }
   }
 }

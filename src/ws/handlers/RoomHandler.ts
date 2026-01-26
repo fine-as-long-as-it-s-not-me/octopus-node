@@ -45,12 +45,12 @@ type RoomHandlerRequestMap = {
 
 export const roomHandlers: SubTypeHandlerMap<RoomHandlerRequestMap> = {
   join(socket, data: RoomJoinRequest) {
-    const { roomCode, UUID, name } = data
-    roomService.join(roomCode, socket, UUID, name)
+    const { roomCode, UUID } = data
+    roomService.join(roomCode, socket, UUID)
   },
   join_random(socket, data: RoomRandomJoinRequest) {
-    const { UUID, name } = data
-    roomService.joinRandom(socket, UUID, name)
+    const { UUID } = data
+    roomService.joinRandom(socket, UUID)
   },
   leave(socket, data: RoomLeaveRequest) {
     const { roomCode } = data
