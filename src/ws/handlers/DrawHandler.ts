@@ -1,43 +1,28 @@
+import { Stroke } from '../../data/types'
+import { canvasService } from '../../services/CanvasService'
 import { SubTypeHandlerMap } from '../types'
 
-type StrokeStartHandler = {
-  strokeId: string
-  tool: string
-  color: string
-  width: number
-}
-
 type StrokeAddHandler = {
-  strokeId: string
-  points: Array<{ x: number; y: number }>
-}
-
-type StrokeEndHandler = {
-  strokeId: string
+  stroke: Stroke
 }
 
 type CanvasBackgroundHandler = {
-  canvasColor: string
+  color: string
 }
 
 type DrawHandlerHandlerMap = {
-  start: StrokeStartHandler
   add: StrokeAddHandler
-  end: StrokeEndHandler
   background: CanvasBackgroundHandler
 }
 
 export const drawHandlers: SubTypeHandlerMap<DrawHandlerHandlerMap> = {
-  start(socket, data: StrokeStartHandler) {
-    // 그리기 시작
-  },
   add(socket, data: StrokeAddHandler) {
-    // stroke 추가
-  },
-  end(socket, data: StrokeEndHandler) {
-    // 그림 끝
+    const { stroke } = data
+    canvasService.addStroke(socket, stroke)
   },
   background(socket, data: CanvasBackgroundHandler) {
     // 배경색 변경
+    const { color } = data
+    canvasService.changeBackground(socket, color)
   },
 }

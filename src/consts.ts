@@ -1,4 +1,5 @@
-import { Settings } from './data/types'
+import { PlayerData } from './data/PlayerData'
+import { Phase, Settings } from './data/types'
 
 export const MAX_PLAYERS = 12
 export const DEFAULT_SETTING: Omit<Settings, 'lang'> = {
@@ -10,4 +11,10 @@ export const DEFAULT_SETTING: Omit<Settings, 'lang'> = {
   isCustomWordVoteOpen: false,
   customWordMinVotes: 2,
   isPublic: true,
+}
+
+export const SYSTEM = {
+  id: 0,
+  UUID: 'system',
+  name: 'System',
 }

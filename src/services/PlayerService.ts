@@ -14,32 +14,24 @@ class PlayerService {
 
   login(socket: WebSocket, UUID: string, name: string, lang: Language) {
     let player = playerRepository.findByUUID(UUID)
-    if (player) {
-      playerRepository.login(player, name, socket)
-      console.log(`Player logged in: ${name} (${UUID})`)
-    } else {
-      player = playerRepository.create({ UUID, name, socket, lang })
-      console.log(`New player registered: ${name} (${UUID})`)
-    }
 
-    this.sendMessage(player.id, 'hello', playerRepository.getResponseDTO(player.id))
+    if (player) playerRepository.login(player, name, socket)
+    else player = playerRepository.create({ UUID, name, socket, lang })
+
+    const responseDTO = playerRepository.getResponseDTO(player.id)
+    const data = responseDTO ? { ...responseDTO } : {}
+    this.sendMessage(player.id, 'hello', data)
 
     return player
-  }
-
-  logout(playerId: number) {
-    playerRepository.logout(playerId)
   }
 
   sendMessage(playerId: number, type: string, data: any): void {
     const player = playerRepository.findById(playerId)
     if (!player) return console.error(`Player with ID ${playerId} not found`)
 
-    console.log('Sending message:', { type, data }, player.UUID)
-
     sendSocketMessage(player.socket, type, data, (err) => {
       if (err) {
-        if (player.socket.readyState === WebSocket.CLOSED) this.logout(player.id)
+        if (player.socket.readyState === WebSocket.CLOSED) playerRepository.logout(player.id)
       }
     })
   }

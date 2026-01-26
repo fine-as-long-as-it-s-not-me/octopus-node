@@ -35,12 +35,14 @@ export interface Stroke {
 }
 
 export type ToolType = 'pen' | 'eraser'
-export type GamePhaseType =
-  | 'pending'
-  | 'keyword'
-  | 'drawing'
-  | 'discussion'
-  | 'voting'
-  | 'voteResult'
-  | 'guessing'
-  | 'result'
+export enum Phase {
+  INIT = 'init',
+  KEYWORD = 'keyword',
+  DRAWING = 'drawing',
+  DISCUSSION = 'discussion',
+  VOTING = 'voting',
+  VOTE_RESULT = 'voteResult',
+  GUESSING = 'guessing',
+  SCORE = 'score',
+  RESULT = 'result',
+}

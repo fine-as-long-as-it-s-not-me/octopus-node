@@ -1,6 +1,7 @@
 import { PlayerData } from '../data/PlayerData'
 import { RoomData } from '../data/RoomData'
 import { Language, Settings } from '../data/types'
+import { roomService } from '../services/RoomService'
 import { BaseRepository } from './BaseRepository'
 
 class RoomRepository extends BaseRepository<RoomData> {
@@ -50,23 +51,20 @@ class RoomRepository extends BaseRepository<RoomData> {
     player.roomId = roomId
     if (room.players.find((p) => p.id === player.id)) return
     room.players.push(player)
+    roomService.sendMessage(room, 'chat_added', {
+      player: { name: 'SYSTEM' },
+      text: `${player.name}님이 입장하셨습니다.`,
+    })
   }
 
-  removePlayer(roomId: number, playerId: number): void {
-    const room = this.findById(roomId)
-    if (!room) throw new Error('Room not found')
-
+  removePlayer(room: RoomData, playerId: number): void {
     const player = room.players.find((p) => p.id === playerId)
     if (!player) throw new Error('Player not found in room')
 
-    player.roomId = null
     room.players = room.players.filter((p) => p.id !== playerId)
 
-    if (room.players.length === 0) {
-      this.delete(roomId)
-    } else if (room.host.id === playerId) {
-      room.host = room.players[0]
-    }
+    if (room.players.length === 0) this.delete(room.id)
+    else if (room.host.id === playerId) room.host = room.players[0]
   }
 
   getRandomRoom(lang: Language): RoomData | undefined {
