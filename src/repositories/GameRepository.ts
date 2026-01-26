@@ -64,8 +64,13 @@ class GameRepository extends BaseRepository<GameData> {
 
   getWords(lang: Language): { category: string; keyword: string; fakeWord: string } {
     // 카테고리에 따른 단어 선택
-    const category = Object.keys(keywords)[Math.floor(Math.random() * Object.keys(keywords).length)]
+    const categories = Object.keys(keywords)
+    const category = categories[Math.floor(Math.random() * categories.length)]
     const wordList = keywords[category as keyof typeof keywords][lang]
+
+    console.log(categories, category, lang)
+    console.log('wordList:', wordList)
+
     const i1 = Math.floor(Math.random() * wordList.length)
     let i2
     while (i1 === (i2 = Math.floor(Math.random() * wordList.length))) {}

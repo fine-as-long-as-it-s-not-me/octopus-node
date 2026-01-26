@@ -15,8 +15,6 @@ class PlayerRepository extends BaseRepository<PlayerData> {
     const player = new PlayerData(UUID, name, socket, lang, this.getHeartbeatInterval(socket))
     this.records.set(player.id, player)
 
-    console.log(`New player registered: ${name} (${UUID})`)
-
     return player
   }
 
