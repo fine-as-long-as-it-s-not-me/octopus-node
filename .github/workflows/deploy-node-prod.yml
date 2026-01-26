@@ -45,7 +45,7 @@ jobs:
 
             LB_OCID="${{ secrets.OCI_LB_OCID }}"
             ROUTING_POLICY_NAME="Octopus-Main-Policy"
-            PROD_RULE_NAME="Prod-Socket-Rule"
+            PROD_RULE_NAME="Prod_Node_Rule"
             BLUE_SET="NODE-BLUEset"
             GREEN_SET="NODE-GREENset"
             BLUE_PORT=3001
