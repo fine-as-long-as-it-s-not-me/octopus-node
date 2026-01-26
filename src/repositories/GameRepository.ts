@@ -1,4 +1,3 @@
-import { CanvasData } from '../data/CanvasData'
 import { GameData } from '../data/GameData'
 import { RoomData } from '../data/RoomData'
 import { Language } from '../data/types'

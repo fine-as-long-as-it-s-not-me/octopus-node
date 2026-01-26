@@ -18,7 +18,9 @@ class PlayerService {
     if (player) playerRepository.login(player, name, socket)
     else player = playerRepository.create({ UUID, name, socket, lang })
 
-    this.sendMessage(player.id, 'hello', { ...playerRepository.getResponseDTO(player.id) })
+    const responseDTO = playerRepository.getResponseDTO(player.id)
+    const data = responseDTO ? { ...responseDTO } : {}
+    this.sendMessage(player.id, 'hello', data)
 
     return player
   }
