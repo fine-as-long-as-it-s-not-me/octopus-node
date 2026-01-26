@@ -52,17 +52,13 @@ class RoomRepository extends BaseRepository<RoomData> {
     room.players.push(player)
   }
 
-  removePlayer(roomId: number, playerId: number): void {
-    const room = this.findById(roomId)
-    if (!room) throw new Error('Room not found')
-
+  removePlayer(room: RoomData, playerId: number): void {
     const player = room.players.find((p) => p.id === playerId)
     if (!player) throw new Error('Player not found in room')
 
-    player.roomId = null
     room.players = room.players.filter((p) => p.id !== playerId)
 
-    if (room.players.length === 0) this.delete(roomId)
+    if (room.players.length === 0) this.delete(room.id)
     else if (room.host.id === playerId) room.host = room.players[0]
   }
 

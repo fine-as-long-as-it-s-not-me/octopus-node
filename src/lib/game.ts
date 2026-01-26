@@ -1,4 +1,5 @@
 import { GameData } from '../data/GameData'
+import { RoomData } from '../data/RoomData'
 import { Phase } from '../data/types'
 
 export function getNextPhase(phase: Phase): Phase {
@@ -26,12 +27,12 @@ export function getNextPhase(phase: Phase): Phase {
   }
 }
 
-export function getPhaseDuration(game: GameData): number {
+export function getPhaseDuration(game: GameData, room: RoomData): number {
   switch (game.phase) {
     case Phase.KEYWORD:
-      return 10
+      return 5
     case Phase.DRAWING:
-      return game.room.players.length * game.room.settings.drawingTime
+      return room.players.length * room.settings.drawingTime
     case Phase.DISCUSSION:
       return 30 + game.timeAlpha
     case Phase.VOTING:

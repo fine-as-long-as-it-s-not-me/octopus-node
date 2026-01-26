@@ -2,7 +2,6 @@ import { WebSocket } from 'ws'
 import { playerRepository } from '../repositories/PlayerRepository'
 import { roomRepository } from '../repositories/RoomRepository'
 import { gameRepository } from '../repositories/GameRepository'
-import { getNextPhase } from '../lib/game'
 import { Phase } from '../data/types'
 import { GameData } from '../data/GameData'
 import { roomService } from './RoomService'
@@ -22,7 +21,9 @@ class GameService {
   }
 
   updateRound(game: GameData): void {
-    const room = game.room
+    const room = roomRepository.findById(game.roomId)
+    if (!room) return
+
     roomService.sendMessage(room, 'round_updated', {
       round: game.round,
     })
@@ -32,9 +33,10 @@ class GameService {
     const game = gameRepository.findById(gameId)
     if (!game) return
 
-    const room = game.room
+    const room = roomRepository.findById(game.roomId)
+    if (!room) return
 
-    if (game.phase === Phase.DRAWING) timeLeft = timeLeft % room.players.length
+    if (game.phase === Phase.DRAWING) timeLeft = timeLeft % room.settings.drawingTime
 
     roomService.sendMessage(room, 'tick', {
       round: game.round,
@@ -53,26 +55,14 @@ class GameService {
     if (!room) return
     if (room.host.id !== player.id || room.game) return // 호스트만 게임 시작 가능
 
-    gameRepository.create(room) // 예시로 총 5라운드 게임 생성
-  }
-
-  getWords(category: string): { keyword: string; fakeWord: string } {
-    // 카테고리에 따른 단어 선택 로직 (예시로 고정된 단어 사용)
-    return {
-      keyword: 'example',
-      fakeWord: 'fake',
-    }
+    gameRepository.create(room)
   }
 
   initRound(game: GameData): void {
-    // 라운드 초기화 로직
-    game.round++
-    const { keyword, fakeWord } = this.getWords('exampleCategory')
+    const room = roomRepository.findById(game.roomId)
+    if (!room) return console.log('Room not found at initRound')
 
-    ;[game.keyword, game.fakeWord] = [keyword, fakeWord]
-
-    game.liars = [game.room.players[0]] // 예시로 고정된 키워드 사용
-    game.painter = null
+    gameRepository.initRound(game.id, room)
 
     this.updateRound(game)
   }
@@ -81,8 +71,11 @@ class GameService {
     // 키워드 표시 단계
     this.initRound(game)
 
-    game.room.players.forEach((player) => {
-      const isLiar = game.liars.some((liar) => liar.id === player.id)
+    const room = roomRepository.findById(game.roomId)
+    if (!room) return
+
+    room.players.forEach((player) => {
+      const isLiar = game.liars.some((liarId) => liarId === player.id)
       const wordToShow = isLiar ? game.fakeWord : game.keyword
 
       playerService.sendMessage(player.id, 'keyword', {
@@ -92,20 +85,33 @@ class GameService {
   }
 
   handleDrawingPhase(game: GameData, timeLeft: number): void {
+    const room = roomRepository.findById(game.roomId)
+    if (!room) return
+
+    console.log(timeLeft)
+
     // 현재 painter UUID 가져오기
-    const playerLength = game.room.players.length
+    const playerLength = room.players.length
 
     // 현재 라운드와 날짜 활용한 난수 offset
     const offset = (game.round + new Date().getDate()) % playerLength
-    const d = Math.floor(timeLeft / game.room.settings.drawingTime)
+    const d = Math.floor(timeLeft / room.settings.drawingTime)
     const index = (d + offset) % playerLength
 
-    const painter = game.room.players[index]
-    game.painter = painter
+    const painter = room.players[index]
+    game.painterId = painter.id
 
-    roomService.sendMessage(game.room, 'painter', {
+    const isLastPainter = timeLeft <= room.settings.drawingTime
+
+    roomService.sendMessage(room, 'painter', {
       UUID: painter.UUID,
+      nextUUID: isLastPainter ? null : room.players[(index + 1) % playerLength].UUID,
     })
+
+    if (!isLastPainter)
+      setTimeout(() => {
+        this.handleDrawingPhase(game, timeLeft - room.settings.drawingTime)
+      }, room.settings.drawingTime * 1000)
   }
 
   handleDiscussionPhase(game: GameData): void {

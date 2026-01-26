@@ -73,7 +73,8 @@ class RoomService {
     const player = room.players.find((p) => p.socket === socket)
     if (!player) return
 
-    roomRepository.removePlayer(room.id, player.id)
+    roomRepository.removePlayer(room, player.id)
+    player.roomId = null
     this.updatePlayers(room.id)
   }
 

@@ -19,9 +19,13 @@ class CanvasService {
     if (!room) return
 
     const game = room.game
-    if (!game || game.painter?.id !== player.id) return
+    if (!game || game.painterId !== player.id) return console.log('Not allowed to draw')
 
-    const canvas = game.canvas
+    if (!game.canvasId) return console.log('Canvas ID not found in game')
+
+    const canvas = canvasRepository.findById(game.canvasId)
+    if (!canvas) return console.log('Canvas not found')
+
     canvasRepository.update(canvas.id, { ...canvas, strokes: [...canvas.strokes, stroke] })
     this.updateCanvas(room, canvas)
   }

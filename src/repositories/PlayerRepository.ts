@@ -21,17 +21,6 @@ class PlayerRepository extends BaseRepository<PlayerData> {
     return player
   }
 
-  login(player: PlayerData, name: string, socket: WebSocket) {
-    player.name = name
-    player.socket = socket
-    if (player.heartbeatInterval) clearInterval(player.heartbeatInterval)
-    if (player.roomId) {
-      const room = roomRepository.findById(player.roomId)
-      if (room) roomService.join(room.code, socket, player.UUID, name)
-    }
-    player.heartbeatInterval = this.getHeartbeatInterval(player.socket)
-  }
-
   getHeartbeatInterval(socket: WebSocket) {
     return setInterval(() => {
       sendSocketMessage(socket, 'player', 'heartbeat', (err) => {
@@ -45,15 +34,28 @@ class PlayerRepository extends BaseRepository<PlayerData> {
     }, 5000)
   }
 
+  login(player: PlayerData, name: string, socket: WebSocket) {
+    player.name = name
+    player.socket = socket
+    if (player.heartbeatInterval) clearInterval(player.heartbeatInterval)
+    if (player.roomId) {
+      const room = roomRepository.findById(player.roomId)
+      if (room) roomService.join(room.code, socket, player.UUID, name)
+    }
+    player.heartbeatInterval = this.getHeartbeatInterval(player.socket)
+  }
+
   logout(playerId: number): void {
     const player = this.findById(playerId)
     if (!player) return
 
     clearInterval(player.heartbeatInterval)
 
+    console.log(`Player logged out: ${player.name} (${player.UUID})`)
+
     if (player.roomId) {
       const room = roomRepository.findById(player.roomId)
-      if (room) roomService.leave(room.code, player.socket)
+      if (room) roomRepository.removePlayer(room, player.id)
     }
   }
 
@@ -80,6 +82,7 @@ class PlayerRepository extends BaseRepository<PlayerData> {
     if (!player) return null
 
     const room = player.roomId ? roomRepository.findById(player.roomId) : null
+    console.log(`find room for player ${player.name}:`, room ? room.code : 'no room')
 
     return {
       id: player.id,
