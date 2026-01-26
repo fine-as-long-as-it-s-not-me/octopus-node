@@ -1,21 +1,32 @@
 import { CanvasData } from './CanvasData'
 import { PlayerData } from './PlayerData'
 import { RoomData } from './RoomData'
+import { Phase } from './types'
 
 class GameData {
   static nextId = 1
 
   id: number
-  totalRounds: number
   room: RoomData
-  canvas: CanvasData = new CanvasData()
+  totalRounds: number
+  canvas: CanvasData
   scores = new Map<PlayerData, number>()
-  round = 0
+  lastPhaseChange: number = Date.now()
+  intervalId: NodeJS.Timeout | null = null
 
-  constructor(room: RoomData, totalRounds: number) {
+  round = 0
+  keyword = ''
+  fakeWord = ''
+  liars: PlayerData[] = []
+  painter: PlayerData | null = null
+  phase: Phase = Phase.INIT
+  timeAlpha = 0
+
+  constructor(room: RoomData) {
     this.room = room
     this.id = GameData.nextId++
-    this.totalRounds = totalRounds
+    this.totalRounds = room.settings.rounds
+    this.canvas = new CanvasData(this.id)
 
     this.room.players.forEach((player) => {
       this.scores.set(player, 0)

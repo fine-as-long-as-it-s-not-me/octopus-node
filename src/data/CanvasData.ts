@@ -4,13 +4,15 @@ class CanvasData {
   static nextId = 1
 
   id: number
+  gameId: number
   strokes: Stroke[]
-  backgroundColor: string
+  bgColor: string
 
-  constructor() {
+  constructor(gameId: number) {
     this.id = CanvasData.nextId++
+    this.gameId = gameId
     this.strokes = []
-    this.backgroundColor = '#FFFFFF'
+    this.bgColor = '#FFFFFF'
   }
 }
 

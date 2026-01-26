@@ -16,7 +16,7 @@ class PlayerRepository extends BaseRepository<PlayerData> {
     const player = new PlayerData(UUID, name, socket, lang, this.getHeartbeatInterval(socket))
     this.records.set(player.id, player)
 
-    console.log(Array.from(this.records.values()).map((p) => p.name))
+    console.log(`New player registered: ${name} (${UUID})`)
 
     return player
   }
@@ -25,6 +25,10 @@ class PlayerRepository extends BaseRepository<PlayerData> {
     player.name = name
     player.socket = socket
     if (player.heartbeatInterval) clearInterval(player.heartbeatInterval)
+    if (player.roomId) {
+      const room = roomRepository.findById(player.roomId)
+      if (room) roomService.join(room.code, socket, player.UUID, name)
+    }
     player.heartbeatInterval = this.getHeartbeatInterval(player.socket)
   }
 
@@ -34,7 +38,7 @@ class PlayerRepository extends BaseRepository<PlayerData> {
         if (err) {
           if (socket.readyState === WebSocket.CLOSED) {
             const player = playerRepository.findBySocket(socket)
-            if (player) playerService.logout(player.id)
+            if (player) this.logout(player.id)
           }
         }
       })
@@ -51,10 +55,6 @@ class PlayerRepository extends BaseRepository<PlayerData> {
       const room = roomRepository.findById(player.roomId)
       if (room) roomService.leave(room.code, player.socket)
     }
-
-    this.records.delete(playerId)
-
-    console.log(`Player logged out: ${player.name} (${player.UUID})`)
   }
 
   findBySocket(socket: WebSocket): PlayerData | null {

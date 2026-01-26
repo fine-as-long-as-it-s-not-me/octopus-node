@@ -62,11 +62,8 @@ class RoomRepository extends BaseRepository<RoomData> {
     player.roomId = null
     room.players = room.players.filter((p) => p.id !== playerId)
 
-    if (room.players.length === 0) {
-      this.delete(roomId)
-    } else if (room.host.id === playerId) {
-      room.host = room.players[0]
-    }
+    if (room.players.length === 0) this.delete(roomId)
+    else if (room.host.id === playerId) room.host = room.players[0]
   }
 
   getRandomRoom(lang: Language): RoomData | undefined {
