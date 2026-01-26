@@ -45,9 +45,9 @@ jobs:
             docker stop octopus-node || true
             docker rm octopus-node || true
 
-            # 8081 포트로 실행하며 백엔드 주소를 환경변수로 전달
-            docker run -d --name octopus-node -p 8081:8081 \
+            # 8081 포트로 실행하며 백엔드 주소 전달
+            docker run -d --name octopus-node -p 3000:3000 \
               --platform linux/arm64 \
               -e BACKEND_URL=http://161.33.40.189:8080 \
-              -e PORT=8081 \
+              -e PORT=3000 \
               ${{ secrets.OCI_REGISTRY }}/axslwmgnmqcx/findtheoctopus-node:dev
