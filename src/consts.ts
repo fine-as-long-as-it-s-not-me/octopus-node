@@ -1,3 +1,4 @@
+import { PlayerData } from './data/PlayerData'
 import { Phase, Settings } from './data/types'
 
 export const MAX_PLAYERS = 12
@@ -22,4 +23,10 @@ export const PHASE_INTERVALS: Record<Phase, number> = {
   guessing: 20,
   score: 15,
   result: 10,
+}
+
+export const SYSTEM = {
+  id: 0,
+  UUID: 'system',
+  name: 'System',
 }

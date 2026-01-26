@@ -7,7 +7,7 @@ type StrokeAddHandler = {
 }
 
 type CanvasBackgroundHandler = {
-  canvasColor: string
+  color: string
 }
 
 type DrawHandlerHandlerMap = {
@@ -22,5 +22,7 @@ export const drawHandlers: SubTypeHandlerMap<DrawHandlerHandlerMap> = {
   },
   background(socket, data: CanvasBackgroundHandler) {
     // 배경색 변경
+    const { color } = data
+    canvasService.changeBackground(socket, color)
   },
 }

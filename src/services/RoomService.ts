@@ -78,8 +78,6 @@ class RoomService {
     this.updatePlayers(room.id)
   }
 
-  //--- Socket Broadcasts---
-
   updatePlayers(roomId: number): void {
     const room = roomRepository.findById(roomId)
     if (!room) return

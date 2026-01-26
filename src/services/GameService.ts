@@ -6,6 +6,8 @@ import { Phase } from '../data/types'
 import { GameData } from '../data/GameData'
 import { roomService } from './RoomService'
 import { playerService } from './PlayerService'
+import { canvasService } from './CanvasService'
+import { canvasRepository } from '../repositories/CanvasRepository'
 
 class GameService {
   phaseHandlers: Record<Phase, (game: GameData, timeLeft: number) => void> = {
@@ -63,8 +65,13 @@ class GameService {
     if (!room) return console.log('Room not found at initRound')
 
     gameRepository.initRound(game.id, room)
-
     this.updateRound(game)
+
+    // canvas 초기화
+    if (!game.canvasId) return
+    const canvas = canvasRepository.findById(game.canvasId)
+    if (!canvas) return
+    canvasService.updateCanvas(room, canvas)
   }
 
   handleKeywordPhase(game: GameData): void {
