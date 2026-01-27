@@ -17,18 +17,15 @@ class GameRepository extends BaseRepository<GameData> {
 
     roomRepository.update(room.id, { ...room, game: game })
 
-    game.intervalId = setInterval(() => {
-      gameRepository.tick(game.id)
-    }, 1000)
     return game
   }
 
-  tick(gameId: number): void {
+  getPhaseLeftTime(gameId: number): number {
     const game = this.findById(gameId)
-    if (!game) return
+    if (!game) return 0
 
     const room = roomRepository.findById(game.roomId)
-    if (!room) return
+    if (!room) return 0
 
     // 게임 타이머 관련 로직
     const now = Date.now()
@@ -37,6 +34,7 @@ class GameRepository extends BaseRepository<GameData> {
     let timeLeft = phaseDuration - elapsed
 
     if (timeLeft < 0) {
+      // update phase
       game.lastPhaseChange = now
       const nextPhase = getNextPhase(game.phase)
       game.phase = nextPhase
@@ -44,7 +42,9 @@ class GameRepository extends BaseRepository<GameData> {
       gameService.phaseHandlers[game.phase](game, timeLeft)
     }
 
-    gameService.tick(game.id, timeLeft)
+    if (game.phase === Phase.DRAWING) timeLeft %= room.settings.drawingTime
+
+    return timeLeft
   }
 
   initRound(gameId: number, room: RoomData): void {
@@ -103,7 +103,7 @@ class GameRepository extends BaseRepository<GameData> {
     if (amount > 0) player.hasIncreasedDiscussionTime = true
     if (amount < 0) player.hasDecreasedDiscussionTime = true
 
-    game.lastPhaseChange -= amount * 1000
+    game.lastPhaseChange += amount * 1000
     return true
   }
 }

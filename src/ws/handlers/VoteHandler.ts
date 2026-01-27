@@ -1,8 +1,7 @@
 import { SubTypeHandlerMap } from '../types'
 
 type VoteCastHandler = {
-  round: number
-  targetId: string
+  targetUUID: string
 }
 
 type VoteHandlerHandlerMap = {

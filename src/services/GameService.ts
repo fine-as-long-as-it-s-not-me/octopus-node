@@ -22,23 +22,32 @@ class GameService {
     [Phase.RESULT]: this.handleResultPhase.bind(this),
   }
 
-  updateRound(game: GameData): void {
-    const room = roomRepository.findById(game.roomId)
+  startGame(socket: WebSocket): void {
+    // 게임을 시작하는 로직
+    const player = playerRepository.findBySocket(socket)
+    if (!player || !player.roomId) return
+
+    const room = roomRepository.findById(player.roomId)
     if (!room) return
 
-    roomService.sendMessage(room, 'round_updated', {
-      round: game.round,
-    })
+    if (room.host.id !== player.id) return
+    if (room.game) return
+
+    const game = gameRepository.create(room)
+    if (!game) return
+    game.intervalId = setInterval(() => {
+      gameService.tick(game.id)
+    }, 1000)
   }
 
-  tick(gameId: number, timeLeft: number): void {
+  tick(gameId: number): void {
     const game = gameRepository.findById(gameId)
     if (!game) return
 
     const room = roomRepository.findById(game.roomId)
     if (!room) return
 
-    if (game.phase === Phase.DRAWING) timeLeft = timeLeft % room.settings.drawingTime
+    let timeLeft = gameRepository.getPhaseLeftTime(gameId)
 
     roomService.sendMessage(room, 'tick', {
       round: game.round,
@@ -47,31 +56,21 @@ class GameService {
     })
   }
 
-  startGame(socket: WebSocket): void {
-    // 게임을 시작하는 로직
-    const player = playerRepository.findBySocket(socket)
-    if (!player) return
-    const roomId = player.roomId
-    if (!roomId) return
-    const room = roomRepository.findById(roomId)
-    if (!room) return
-    if (room.host.id !== player.id || room.game) return // 호스트만 게임 시작 가능
-
-    gameRepository.create(room)
-  }
-
   initRound(game: GameData): void {
     const room = roomRepository.findById(game.roomId)
     if (!room) return console.log('Room not found at initRound')
 
     gameRepository.initRound(game.id, room)
-    this.updateRound(game)
 
     // canvas 초기화
     if (!game.canvasId) return
     const canvas = canvasRepository.findById(game.canvasId)
     if (!canvas) return
     canvasService.updateCanvas(room, canvas)
+
+    roomService.sendMessage(room, 'round_updated', {
+      round: game.round,
+    })
   }
 
   handleKeywordPhase(game: GameData): void {
@@ -95,13 +94,9 @@ class GameService {
     const room = roomRepository.findById(game.roomId)
     if (!room) return
 
-    console.log(timeLeft)
-
     // 현재 painter UUID 가져오기
     const playerLength = room.players.length
-
-    // 현재 라운드와 날짜 활용한 난수 offset
-    const offset = (game.round + new Date().getDate()) % playerLength
+    const offset = game.lastPhaseChange % playerLength
     const d = Math.floor(timeLeft / room.settings.drawingTime)
     const index = (d + offset) % playerLength
 
@@ -163,7 +158,12 @@ class GameService {
     const res = gameRepository.changeDiscussionTime(player, game.id, amount)
     if (!res) return
 
-    roomService.addSystemChatMessage(room.id, 'discussion_time_changed', { amount })
+    roomService.addSystemChatMessage(room.id, 'discussion_time_changed', {
+      amount,
+      name: player.name,
+    })
+
+    this.tick(game.id)
   }
 }
 
