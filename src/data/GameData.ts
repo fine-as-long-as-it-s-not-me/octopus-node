@@ -12,13 +12,17 @@ class GameData {
   lastPhaseChange: number = Date.now()
   intervalId: NodeJS.Timeout | null = null
 
+  // round state
   round = 0
   keyword = ''
   fakeWord = ''
   liars: number[] = []
+  votes: Map<number, number> = new Map()
+
+  // phase state
+  phase: Phase = Phase.INIT
   canvasId: number | null = null
   painterId: number | null = null
-  phase: Phase = Phase.INIT
   timeAlpha = 0
 
   constructor(room: RoomData) {

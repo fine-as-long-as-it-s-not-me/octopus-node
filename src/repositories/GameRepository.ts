@@ -61,6 +61,9 @@ class GameRepository extends BaseRepository<GameData> {
     // 라이어
     game.liars = [room.players[0].id] // 예시로 고정된 라이어
 
+    // 투표
+    game.votes = new Map()
+
     // 그림
     game.painterId = null
     const canvas = canvasRepository.create({ gameId: game.id })
@@ -105,6 +108,25 @@ class GameRepository extends BaseRepository<GameData> {
 
     game.lastPhaseChange += amount * 1000
     return true
+  }
+
+  vote(game: GameData, player: PlayerData, targetPlayer: PlayerData): boolean {
+    if (game.phase !== Phase.VOTING) return false
+    if (player.voted) return false
+    const currentVotes = game.votes.get(targetPlayer.id) || 0
+    game.votes.set(targetPlayer.id, currentVotes + 1)
+    player.voted = true
+    return true
+  }
+
+  getVoteResult(game: GameData): Map<string, number> {
+    const res = new Map<string, number>()
+    game.votes.forEach((count, playerId) => {
+      const player = playerRepository.findById(playerId)
+      if (!player) return
+      res.set(player.UUID, count)
+    })
+    return res
   }
 }
 

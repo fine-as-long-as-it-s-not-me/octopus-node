@@ -41,7 +41,7 @@ export enum Phase {
   DRAWING = 'drawing',
   DISCUSSION = 'discussion',
   VOTING = 'voting',
-  VOTE_RESULT = 'voteResult',
+  VOTE_RESULT = 'vote-result',
   GUESSING = 'guessing',
   SCORE = 'score',
   RESULT = 'result',

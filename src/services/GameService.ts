@@ -126,6 +126,14 @@ class GameService {
 
   handleVoteResultPhase(game: GameData): void {
     // 투표 결과 발표 단계
+    const room = roomRepository.findById(game.roomId)
+    if (!room) return
+
+    const voteResult = gameRepository.getVoteResult(game)
+
+    roomService.sendMessage(room, 'vote_result', {
+      voteResult,
+    })
   }
 
   handleGuessingPhase(game: GameData): void {
@@ -164,6 +172,30 @@ class GameService {
     })
 
     this.tick(game.id)
+  }
+
+  vote(socket: WebSocket, targetUUID: string): void {
+    const player = playerRepository.findBySocket(socket)
+    if (!player) return
+    const roomId = player.roomId
+    if (!roomId) return
+    const room = roomRepository.findById(roomId)
+    if (!room) return
+    const game = room.game
+    if (!game) return
+
+    if (game.phase !== Phase.VOTING) return
+
+    const targetPlayer = room.players.find((p) => p.UUID === targetUUID)
+    if (!targetPlayer) return
+
+    const res = gameRepository.vote(game, player, targetPlayer)
+    if (!res) return
+
+    // 투표 처리 로직 (예: 투표 집계)
+    roomService.addSystemChatMessage(room.id, 'player_voted', {
+      voterName: player.name,
+    })
   }
 }
 
