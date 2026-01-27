@@ -194,8 +194,14 @@ class GameService {
 
     if (game.phase !== Phase.DISCUSSION) return
 
-    if (amount > 0 && player.hasIncreasedDiscussionTime) return
-    if (amount < 0 && player.hasDecreasedDiscussionTime) return
+    if (amount > 0 && player.hasIncreasedDiscussionTime)
+      return playerService.sendMessage(player.id, 'error', {
+        message: 'You have already extended the discussion time.',
+      })
+    if (amount < 0 && player.hasDecreasedDiscussionTime)
+      return playerService.sendMessage(player.id, 'error', {
+        message: 'You have already shortened the discussion time.',
+      })
 
     const res = gameRepository.changeDiscussionTime(player, game.id, amount)
     if (!res) return
