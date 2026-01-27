@@ -48,6 +48,7 @@ class GameService {
     if (!room) return
 
     let timeLeft = gameRepository.getPhaseLeftTime(gameId)
+    if (timeLeft < 0) gameRepository.updatePhase(gameId)
 
     roomService.sendMessage(room, 'tick', {
       round: game.round,
@@ -81,8 +82,8 @@ class GameService {
     if (!room) return
 
     room.players.forEach((player) => {
-      const isLiar = game.liars.some((liarId) => liarId === player.id)
-      const wordToShow = isLiar ? game.fakeWord : game.keyword
+      const isOctopus = game.octopuses.some((octopusUUID) => octopusUUID === player.UUID)
+      const wordToShow = isOctopus ? game.fakeWord : game.keyword
 
       playerService.sendMessage(player.id, 'keyword', {
         keyword: wordToShow,
@@ -131,8 +132,41 @@ class GameService {
 
     const voteResult = gameRepository.getVoteResult(game)
 
+    let topVotes: string[] = []
+    let topVote = 0
+    for (const [UUID, count] of voteResult.entries()) {
+      if (count > topVote) {
+        topVote = count
+        topVotes = [UUID]
+      } else if (count === topVote) {
+        topVotes.push(UUID)
+      }
+    }
+
+    if (topVotes.length === 1) {
+      const votedUUID = topVotes[0]
+      const isOctopus = game.octopuses.includes(votedUUID)
+      if (isOctopus) {
+        // 라이어를 맞춘 경우
+      } else {
+        // 라이어를 못 맞춘 경우
+      }
+    } else {
+      // 동점인 경우
+      if (game.didVoteTie) {
+        // 라이어 승리
+      } else {
+        // 재투표
+      }
+    }
+
     roomService.sendMessage(room, 'vote_result', {
       voteResult,
+      octopuses: game.octopuses.map((id) => {
+        const player = playerRepository.findByUUID(id)
+        if (!player) return null
+        return playerRepository.getResponseDTO(player.id)
+      }),
     })
   }
 

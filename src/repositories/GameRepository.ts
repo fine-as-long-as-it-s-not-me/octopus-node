@@ -27,24 +27,29 @@ class GameRepository extends BaseRepository<GameData> {
     const room = roomRepository.findById(game.roomId)
     if (!room) return 0
 
-    // 게임 타이머 관련 로직
     const now = Date.now()
     const elapsed = Math.floor((now - game.lastPhaseChange) / 1000)
     const phaseDuration = getPhaseDuration(game, room)
     let timeLeft = phaseDuration - elapsed
 
-    if (timeLeft < 0) {
-      // update phase
-      game.lastPhaseChange = now
-      const nextPhase = getNextPhase(game.phase)
-      game.phase = nextPhase
-      timeLeft = getPhaseDuration(game, room)
-      gameService.phaseHandlers[game.phase](game, timeLeft)
-    }
-
     if (game.phase === Phase.DRAWING) timeLeft %= room.settings.drawingTime
 
     return timeLeft
+  }
+
+  updatePhase(gameId: number): boolean {
+    const game = this.findById(gameId)
+    if (!game) return false
+
+    const room = roomRepository.findById(game.roomId)
+    if (!room) return false
+
+    game.lastPhaseChange = Date.now()
+    game.phase = getNextPhase(game.phase)
+
+    const timeLeft = getPhaseDuration(game, room)
+    gameService.phaseHandlers[game.phase](game, timeLeft)
+    return true
   }
 
   initRound(gameId: number, room: RoomData): void {
@@ -54,17 +59,24 @@ class GameRepository extends BaseRepository<GameData> {
     // 라운드 초기화
     game.round++
 
-    // 제시어
+    // 제시어 선정
     const { keyword, fakeWord } = this.getWords(room.lang)
     ;[game.keyword, game.fakeWord] = [keyword, fakeWord]
 
-    // 라이어
-    game.liars = [room.players[0].id] // 예시로 고정된 라이어
+    // 라이어 선정
+    let selectedOctopuses: string[] = []
+    while (selectedOctopuses.length < room.settings.liars) {
+      const candidate = room.players[Math.floor(Math.random() * room.players.length)].UUID
+      if (!selectedOctopuses.includes(candidate)) {
+        selectedOctopuses.push(candidate)
+      }
+    }
+    game.octopuses = selectedOctopuses
 
-    // 투표
+    // 투표 초기화
     game.votes = new Map()
 
-    // 그림
+    // 그림 초기화
     game.painterId = null
     const canvas = canvasRepository.create({ gameId: game.id })
     game.canvasId = canvas.id
@@ -113,20 +125,25 @@ class GameRepository extends BaseRepository<GameData> {
   vote(game: GameData, player: PlayerData, targetPlayer: PlayerData): boolean {
     if (game.phase !== Phase.VOTING) return false
     if (player.voted) return false
-    const currentVotes = game.votes.get(targetPlayer.id) || 0
-    game.votes.set(targetPlayer.id, currentVotes + 1)
+    const currentVotes = game.votes.get(targetPlayer.UUID) || 0
+    game.votes.set(targetPlayer.UUID, currentVotes + 1)
     player.voted = true
     return true
   }
 
   getVoteResult(game: GameData): Map<string, number> {
-    const res = new Map<string, number>()
-    game.votes.forEach((count, playerId) => {
-      const player = playerRepository.findById(playerId)
-      if (!player) return
-      res.set(player.UUID, count)
-    })
-    return res
+    return game.votes
+  }
+
+  delete(gameId: number): boolean {
+    const game = this.findById(gameId)
+    if (!game) return false
+
+    const room = roomRepository.findById(game.roomId)
+    if (room) room.game = null
+
+    this.records.delete(gameId)
+    return true
   }
 }
 

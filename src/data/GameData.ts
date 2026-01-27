@@ -16,8 +16,9 @@ class GameData {
   round = 0
   keyword = ''
   fakeWord = ''
-  liars: number[] = []
-  votes: Map<number, number> = new Map()
+  didVoteTie = false
+  octopuses: string[] = []
+  votes: Map<string, number> = new Map()
 
   // phase state
   phase: Phase = Phase.INIT

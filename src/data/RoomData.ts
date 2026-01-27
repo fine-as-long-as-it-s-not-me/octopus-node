@@ -12,7 +12,7 @@ class RoomData {
   players: PlayerData[] = []
   customWords = new Map<string, number>()
   host: PlayerData
-  game?: GameData
+  game: GameData | null = null
   lang: Language
 
   constructor(host: PlayerData, settings: Settings, code: string) {
