@@ -8,9 +8,18 @@ class PlayerData {
   UUID: string
   name: string
   lang: Language
+
+  // alive states
   socket: WebSocket
   heartbeatInterval: NodeJS.Timeout
+
+  // room states
   roomId: number | null
+
+  // round states
+  hasIncreasedDiscussionTime: boolean = false
+  hasDecreasedDiscussionTime: boolean = false
+  voted: boolean = false
 
   constructor(
     UUID: string,

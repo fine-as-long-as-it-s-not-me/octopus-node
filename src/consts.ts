@@ -13,8 +13,5 @@ export const DEFAULT_SETTING: Omit<Settings, 'lang'> = {
   isPublic: true,
 }
 
-export const SYSTEM = {
-  id: 0,
-  UUID: 'system',
-  name: 'System',
-}
+export const INCREASE_TIME_AMOUNT = 10
+export const DECREASE_TIME_AMOUNT = -10

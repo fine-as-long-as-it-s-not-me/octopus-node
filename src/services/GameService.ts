@@ -144,6 +144,27 @@ class GameService {
   handleResultPhase(game: GameData): void {
     // 결과 발표 단계
   }
+
+  changeDiscussionTime(socket: WebSocket, amount: number): void {
+    const player = playerRepository.findBySocket(socket)
+    if (!player) return
+    const roomId = player.roomId
+    if (!roomId) return
+    const room = roomRepository.findById(roomId)
+    if (!room) return
+    const game = room.game
+    if (!game) return
+
+    if (game.phase !== Phase.DISCUSSION) return
+
+    if (amount > 0 && player.hasIncreasedDiscussionTime) return
+    if (amount < 0 && player.hasDecreasedDiscussionTime) return
+
+    const res = gameRepository.changeDiscussionTime(player, game.id, amount)
+    if (!res) return
+
+    roomService.addSystemChatMessage(room.id, 'discussion_time_changed', { amount })
+  }
 }
 
 const gameService = new GameService()

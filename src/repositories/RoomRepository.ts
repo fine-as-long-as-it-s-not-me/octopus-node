@@ -51,10 +51,6 @@ class RoomRepository extends BaseRepository<RoomData> {
     player.roomId = roomId
     if (room.players.find((p) => p.id === player.id)) return
     room.players.push(player)
-    roomService.sendMessage(room, 'chat_added', {
-      player: { name: 'SYSTEM' },
-      text: `${player.name}님이 입장하셨습니다.`,
-    })
   }
 
   removePlayer(room: RoomData, playerId: number): void {

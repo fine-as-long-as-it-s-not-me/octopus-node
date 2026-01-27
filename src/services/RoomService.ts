@@ -50,6 +50,8 @@ class RoomService {
       this.createRoom(socket, undefined, code)
     } else {
       roomRepository.addPlayer(room.id, player)
+
+      roomService.addSystemChatMessage(room.id, 'player_joined', { name: player.name })
       this.sendWelcomeMessage(room, player)
       this.updatePlayers(room.id)
       this.updateSettings(room.id)
@@ -76,6 +78,8 @@ class RoomService {
     roomRepository.removePlayer(room, player.id)
     player.roomId = null
     this.updatePlayers(room.id)
+
+    this.addSystemChatMessage(room.id, 'player_left', { name: player.name })
   }
 
   updatePlayers(roomId: number): void {
@@ -115,6 +119,16 @@ class RoomService {
     this.sendMessage(room, 'chat_added', {
       player: playerRepository.getResponseDTO(player.id),
       text,
+    })
+  }
+
+  addSystemChatMessage(roomId: number, type: string, variable?: object): void {
+    const room = roomRepository.findById(roomId)
+    if (!room) return
+
+    this.sendMessage(room, 'system_chat', {
+      type,
+      variable,
     })
   }
 }
