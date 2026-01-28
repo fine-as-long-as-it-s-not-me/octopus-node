@@ -9,7 +9,7 @@ class PlayerService {
     if (!player) return sendSocketMessage(socket, 'unregistered')
 
     player.lang = lang
-    this.sendMessage(player.id, 'languageChanged', { lang }) // no use in client
+    this.sendMessage(player.id, 'language_changed', { lang }) // no use in client
   }
 
   login(socket: WebSocket, UUID: string, name: string, lang: Language) {
@@ -20,7 +20,7 @@ class PlayerService {
 
     const responseDTO = playerRepository.getResponseDTO(player.id)
     const data = responseDTO ? { ...responseDTO } : {}
-    this.sendMessage(player.id, 'hello', data)
+    this.sendMessage(player.id, 'player_logged_in', data)
 
     return player
   }

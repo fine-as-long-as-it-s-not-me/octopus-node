@@ -11,20 +11,20 @@ import { canvasRepository } from '../repositories/CanvasRepository'
 import { getPhaseDuration } from '../lib/game'
 
 class GameService {
-  phaseHandlers: Record<Phase, (game: GameData, timeLeft: number) => void> = {
+  phaseStarters: Record<Phase, (game: GameData, timeLeft: number) => void> = {
     [Phase.INIT]: () => {},
-    [Phase.KEYWORD]: this.handleKeywordPhase.bind(this),
-    [Phase.DRAWING]: this.handleDrawingPhase.bind(this),
-    [Phase.DISCUSSION]: this.handleDiscussionPhase.bind(this),
-    [Phase.VOTING]: this.handleVotingPhase.bind(this),
-    [Phase.VOTE_RESULT]: this.handleVoteResultPhase.bind(this),
-    [Phase.GUESSING]: this.handleGuessingPhase.bind(this),
-    [Phase.SCORE]: this.handleScorePhase.bind(this),
-    [Phase.RESULT]: this.handleResultPhase.bind(this),
+    [Phase.KEYWORD]: this.startKeywordPhase.bind(this),
+    [Phase.DRAWING]: this.startDrawingPhase.bind(this),
+    [Phase.DISCUSSION]: this.startDiscussionPhase.bind(this),
+    [Phase.VOTING]: this.startVotingPhase.bind(this),
+    [Phase.VOTE_RESULT]: this.startVoteResultPhase.bind(this),
+    [Phase.GUESSING]: this.startGuessingPhase.bind(this),
+    [Phase.SCORE]: this.startRoundResultPhase.bind(this),
+    [Phase.RESULT]: this.startGameResultPhase.bind(this),
+    [Phase.END]: this.startEndPhase.bind(this),
   }
 
   startGame(socket: WebSocket): void {
-    // 게임을 시작하는 로직
     const player = playerRepository.findBySocket(socket)
     if (!player || !player.roomId) return
 
@@ -36,8 +36,13 @@ class GameService {
 
     const game = gameRepository.create(room)
     if (!game) return
+
+    // broadcast game started message
+    roomService.sendMessage(room, 'game_started', {})
+
+    // proceed time ticker
     game.intervalId = setInterval(() => {
-      gameService.tick(game.id)
+      this.tick(game.id)
     }, 1000)
   }
 
@@ -48,14 +53,42 @@ class GameService {
     const room = roomRepository.findById(game.roomId)
     if (!room) return
 
-    let timeLeft = this.getPhaseLeftTime(gameId)
-    if (timeLeft < 0) gameRepository.updatePhase(gameId)
+    const { timeLeft, phase } = this.getTimeLeftPhase(gameId)
 
     roomService.sendMessage(room, 'tick', {
       round: game.round,
-      phase: game.phase,
+      phase,
       timeLeft,
     })
+  }
+
+  getTimeLeftPhase(gameId: number): { timeLeft: number; phase: Phase } {
+    const game = gameRepository.findById(gameId)
+    if (!game) return { timeLeft: 0, phase: Phase.INIT }
+
+    const room = roomRepository.findById(game.roomId)
+    if (!room) return { timeLeft: 0, phase: Phase.INIT }
+
+    const now = Date.now()
+    const elapsed = Math.floor((now - game.lastPhaseChange) / 1000)
+    const phaseDuration = getPhaseDuration(game.phase, room)
+    let timeLeft = phaseDuration - elapsed
+
+    if (timeLeft < 0) {
+      timeLeft = gameRepository.updatePhase(gameId)
+      this.phaseStarters[game.phase](game, timeLeft)
+    }
+
+    if (game.phase === Phase.DRAWING) {
+      timeLeft =
+        timeLeft > 0
+          ? timeLeft % room.settings.drawingTime === 0
+            ? room.settings.drawingTime
+            : timeLeft % room.settings.drawingTime
+          : 0
+    }
+
+    return { timeLeft, phase: game.phase }
   }
 
   initRound(game: GameData): void {
@@ -75,7 +108,7 @@ class GameService {
     })
   }
 
-  handleKeywordPhase(game: GameData): void {
+  startKeywordPhase(game: GameData): void {
     // 키워드 표시 단계
     this.initRound(game)
 
@@ -92,7 +125,7 @@ class GameService {
     })
   }
 
-  handleDrawingPhase(game: GameData, timeLeft: number): void {
+  startDrawingPhase(game: GameData, timeLeft: number): void {
     const room = roomRepository.findById(game.roomId)
     if (!room) return
 
@@ -114,24 +147,24 @@ class GameService {
 
     if (!isLastPainter)
       setTimeout(() => {
-        this.handleDrawingPhase(game, timeLeft - room.settings.drawingTime)
+        this.startDrawingPhase(game, timeLeft - room.settings.drawingTime)
       }, room.settings.drawingTime * 1000)
   }
 
-  handleDiscussionPhase(game: GameData): void {
+  startDiscussionPhase(game: GameData): void {
     // 토론 단계
   }
 
-  handleVotingPhase(game: GameData): void {
+  startVotingPhase(game: GameData): void {
     // 투표 단계
   }
 
-  handleVoteResultPhase(game: GameData): void {
+  startVoteResultPhase(game: GameData): void {
     // 투표 결과 발표 단계
     const room = roomRepository.findById(game.roomId)
     if (!room) return
 
-    const voteResult = gameRepository.getVoteResult(game)
+    const voteResult = game.votes
 
     let topVotes: string[] = []
     let topVote = 0
@@ -149,8 +182,10 @@ class GameService {
       const isOctopus = game.octopuses.includes(votedUUID)
       if (isOctopus) {
         // 라이어를 맞춘 경우
+        game.foundOctopus = true
       } else {
         // 라이어를 못 맞춘 경우
+        game.foundOctopus = false
       }
     } else {
       // 동점인 경우
@@ -158,6 +193,10 @@ class GameService {
         // 라이어 승리
       } else {
         // 재투표
+        game.didVoteTie = true
+        gameRepository.updatePhase(game.id, Phase.VOTING)
+        roomService.addSystemChatMessage(room.id, 'revote', {})
+        return
       }
     }
 
@@ -171,33 +210,39 @@ class GameService {
     })
   }
 
-  handleGuessingPhase(game: GameData): void {
+  startGuessingPhase(game: GameData): void {
     // 라이어의 제시어 추측 단계
   }
 
-  handleScorePhase(game: GameData): void {
+  startRoundResultPhase(game: GameData): void {
     // 점수 집계 단계
-  }
-
-  handleResultPhase(game: GameData): void {
-    // 결과 발표 단계
-  }
-
-  getPhaseLeftTime(gameId: number): number {
-    const game = gameRepository.findById(gameId)
-    if (!game) return 0
-
     const room = roomRepository.findById(game.roomId)
-    if (!room) return 0
+    if (!room) return
 
-    const now = Date.now()
-    const elapsed = Math.floor((now - game.lastPhaseChange) / 1000)
-    const phaseDuration = getPhaseDuration(game, room)
-    let timeLeft = phaseDuration - elapsed
+    const scores = gameRepository.getScores(game.id)
+    roomService.sendMessage(room, 'round_result', {
+      scores,
+    })
+  }
 
-    if (game.phase === Phase.DRAWING) timeLeft %= room.settings.drawingTime
+  startGameResultPhase(game: GameData): void {
+    // 결과 발표 단계
+    const room = roomRepository.findById(game.roomId)
+    if (!room) return
 
-    return timeLeft
+    const scores = gameRepository.getScores(game.id)
+    roomService.sendMessage(room, 'game_result', {
+      scores,
+    })
+  }
+
+  startEndPhase(game: GameData): void {
+    // 게임 종료 단계
+    const room = roomRepository.findById(game.roomId)
+    if (!room) return
+
+    gameRepository.delete(game.id)
+    roomService.sendMessage(room, 'game_ended', {})
   }
 
   changeDiscussionTime(socket: WebSocket, amount: number): void {

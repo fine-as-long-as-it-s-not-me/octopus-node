@@ -45,4 +45,9 @@ export enum Phase {
   GUESSING = 'guessing',
   SCORE = 'score',
   RESULT = 'result',
+  END = 'end',
 }
+
+export type Team = 'OCTOPUS' | 'PLAYERS'
+
+export type Score = { total: number; delta: number }

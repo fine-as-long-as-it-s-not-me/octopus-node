@@ -1,10 +1,9 @@
 import { GameData } from '../data/GameData'
 import { PlayerData } from '../data/PlayerData'
 import { RoomData } from '../data/RoomData'
-import { Language, Phase } from '../data/types'
+import { Language, Phase, Score } from '../data/types'
 import keywords from '../domain/keywords'
 import { getNextPhase, getPhaseDuration } from '../lib/game'
-import { gameService } from '../services/GameService'
 import { BaseRepository } from './BaseRepository'
 import { canvasRepository } from './CanvasRepository'
 import { playerRepository } from './PlayerRepository'
@@ -20,19 +19,18 @@ class GameRepository extends BaseRepository<GameData> {
     return game
   }
 
-  updatePhase(gameId: number): boolean {
+  updatePhase(gameId: number, nextPhase?: Phase): number {
     const game = this.findById(gameId)
-    if (!game) return false
+    if (!game) return 0
 
     const room = roomRepository.findById(game.roomId)
-    if (!room) return false
+    if (!room) return 0
 
     game.lastPhaseChange = Date.now()
-    game.phase = getNextPhase(game.phase)
+    game.phase = nextPhase ?? getNextPhase(game)
 
-    const timeLeft = getPhaseDuration(game, room)
-    gameService.phaseHandlers[game.phase](game, timeLeft)
-    return true
+    const timeLeft = getPhaseDuration(game.phase, room)
+    return timeLeft
   }
 
   initRound(gameId: number, room: RoomData): void {
@@ -60,9 +58,16 @@ class GameRepository extends BaseRepository<GameData> {
     game.votes = new Map()
 
     // 그림 초기화
+
+    // canvas 초기화
     game.painterId = null
     const canvas = canvasRepository.create({ gameId: game.id })
     game.canvasId = canvas.id
+
+    // 게임 결과 초기화
+    game.foundOctopus = false
+    game.guessedWord = false
+    game.winningTeam = null
 
     // 플레이어 초기화
     room.players.forEach(playerRepository.initRound)
@@ -108,25 +113,35 @@ class GameRepository extends BaseRepository<GameData> {
   vote(game: GameData, player: PlayerData, targetPlayer: PlayerData): boolean {
     if (game.phase !== Phase.VOTING) return false
     if (player.voted) return false
+
     const currentVotes = game.votes.get(targetPlayer.UUID) || 0
     game.votes.set(targetPlayer.UUID, currentVotes + 1)
     player.voted = true
-    return true
-  }
 
-  getVoteResult(game: GameData): Map<string, number> {
-    return game.votes
+    return true
   }
 
   delete(gameId: number): boolean {
     const game = this.findById(gameId)
     if (!game) return false
 
+    if (game.intervalId) {
+      clearInterval(game.intervalId)
+      game.intervalId = null
+    }
+
     const room = roomRepository.findById(game.roomId)
     if (room) room.game = null
 
     this.records.delete(gameId)
     return true
+  }
+
+  getScores(gameId: number): { UUID: string; score: Score }[] {
+    const game = this.findById(gameId)
+    if (!game) return []
+
+    return Array.from(game.scores.entries()).map(([UUID, score]) => ({ UUID, score }))
   }
 }
 
