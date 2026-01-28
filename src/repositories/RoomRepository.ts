@@ -4,15 +4,7 @@ import { Language, Settings } from '../data/types'
 import { BaseRepository } from './BaseRepository'
 
 class RoomRepository extends BaseRepository<RoomData> {
-  create({
-    host,
-    code: roomCode,
-    settings,
-  }: {
-    host: PlayerData
-    code?: string
-    settings: Settings
-  }): RoomData {
+  create({ code: roomCode, settings }: { code?: string; settings: Settings }): RoomData {
     // Validate code uniqueness
     let code = roomCode
     if (code) {
@@ -24,14 +16,13 @@ class RoomRepository extends BaseRepository<RoomData> {
       }
     }
 
-    const room = new RoomData(host, settings, code)
+    const room = new RoomData(settings, code)
 
     this.records.set(room.id, room)
 
     const res = this.findById(room.id)
     if (!res) throw new Error('Failed to create room')
 
-    this.addPlayer(room.id, host)
     return res
   }
 
@@ -42,12 +33,18 @@ class RoomRepository extends BaseRepository<RoomData> {
     return null
   }
 
-  addPlayer(roomId: number, player: PlayerData): void {
+  addPlayer(roomId: number, player: PlayerData): boolean {
     const room = this.findById(roomId)
-    if (!room) throw new Error('Room not found')
+    if (!room) return false
+
     player.roomId = roomId
-    if (room.players.find((p) => p.id === player.id)) return
+    if (room.players.find((p) => p.id === player.id)) return false
+
     room.players.push(player)
+    if (room.players.length === 1) room.hostId = player.id
+    room.settings.lang = player.lang
+
+    return true
   }
 
   removePlayer(room: RoomData, playerId: number): void {
@@ -57,7 +54,7 @@ class RoomRepository extends BaseRepository<RoomData> {
     room.players = room.players.filter((p) => p.id !== playerId)
 
     if (room.players.length === 0) this.delete(room.id)
-    else if (room.host.id === playerId) room.host = room.players[0]
+    else if (room.hostId === playerId) room.hostId = room.players[0].id
   }
 
   getRandomRoom(lang: Language): RoomData | undefined {

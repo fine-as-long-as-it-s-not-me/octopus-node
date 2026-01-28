@@ -18,10 +18,15 @@ class RoomService {
 
     // 설정한 세팅과, 기본 세팅 조합해서 방 생성
     const room = roomRepository.create({
-      host,
       code,
       settings: { ...DEFAULT_SETTING, ...settings, lang: host.lang },
     })
+    if (!room) return
+
+    if (!roomRepository.addPlayer(room.id, host)) return
+
+    roomService.addSystemChatMessage(room.id, 'player_joined', { name: host.name })
+
     this.sendWelcomeMessage(room, host)
     this.updatePlayers(room.id)
     this.updateSettings(room.id)
@@ -34,7 +39,7 @@ class RoomService {
     if (!player || !player.roomId) return sendSocketMessage(socket, 'error')
 
     let room = roomRepository.findById(player.roomId)
-    if (!room || room.host.id !== player.id) return sendSocketMessage(socket, 'error')
+    if (!room || room.hostId !== player.id) return sendSocketMessage(socket, 'error')
 
     roomRepository.update(room.id, { settings: { ...room.settings, ...settings } })
     this.updateSettings(room.id)
@@ -84,9 +89,12 @@ class RoomService {
 
   updatePlayers(roomId: number): void {
     const room = roomRepository.findById(roomId)
-    if (!room) return
+    if (!room || !room.hostId) return
+
+    const host = playerRepository.findById(room.hostId)
+
     this.sendMessage(room, 'players_updated', {
-      hostUUID: room.host.UUID,
+      hostUUID: host?.UUID,
       players: room.players
         .map((p) => playerRepository.getResponseDTO(p.id))
         .filter((playerDTO) => playerDTO !== null),
