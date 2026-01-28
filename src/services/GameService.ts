@@ -8,6 +8,7 @@ import { roomService } from './RoomService'
 import { playerService } from './PlayerService'
 import { canvasService } from './CanvasService'
 import { canvasRepository } from '../repositories/CanvasRepository'
+import { getPhaseDuration } from '../lib/game'
 
 class GameService {
   phaseHandlers: Record<Phase, (game: GameData, timeLeft: number) => void> = {
@@ -47,7 +48,7 @@ class GameService {
     const room = roomRepository.findById(game.roomId)
     if (!room) return
 
-    let timeLeft = gameRepository.getPhaseLeftTime(gameId)
+    let timeLeft = this.getPhaseLeftTime(gameId)
     if (timeLeft < 0) gameRepository.updatePhase(gameId)
 
     roomService.sendMessage(room, 'tick', {
@@ -180,6 +181,23 @@ class GameService {
 
   handleResultPhase(game: GameData): void {
     // 결과 발표 단계
+  }
+
+  getPhaseLeftTime(gameId: number): number {
+    const game = gameRepository.findById(gameId)
+    if (!game) return 0
+
+    const room = roomRepository.findById(game.roomId)
+    if (!room) return 0
+
+    const now = Date.now()
+    const elapsed = Math.floor((now - game.lastPhaseChange) / 1000)
+    const phaseDuration = getPhaseDuration(game, room)
+    let timeLeft = phaseDuration - elapsed
+
+    if (game.phase === Phase.DRAWING) timeLeft %= room.settings.drawingTime
+
+    return timeLeft
   }
 
   changeDiscussionTime(socket: WebSocket, amount: number): void {

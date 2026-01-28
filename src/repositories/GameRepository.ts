@@ -20,23 +20,6 @@ class GameRepository extends BaseRepository<GameData> {
     return game
   }
 
-  getPhaseLeftTime(gameId: number): number {
-    const game = this.findById(gameId)
-    if (!game) return 0
-
-    const room = roomRepository.findById(game.roomId)
-    if (!room) return 0
-
-    const now = Date.now()
-    const elapsed = Math.floor((now - game.lastPhaseChange) / 1000)
-    const phaseDuration = getPhaseDuration(game, room)
-    let timeLeft = phaseDuration - elapsed
-
-    if (game.phase === Phase.DRAWING) timeLeft %= room.settings.drawingTime
-
-    return timeLeft
-  }
-
   updatePhase(gameId: number): boolean {
     const game = this.findById(gameId)
     if (!game) return false
