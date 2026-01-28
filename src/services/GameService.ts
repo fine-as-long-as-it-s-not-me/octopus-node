@@ -204,7 +204,7 @@ class GameService {
     }
 
     roomService.sendMessage(room, 'vote_result', {
-      topVotes,
+      voteResult: Array.from(voteResult.entries()),
       octopuses: game.octopuses.map((id) => {
         const player = playerRepository.findByUUID(id)
         if (!player) return null
