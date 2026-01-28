@@ -23,15 +23,7 @@ class RoomService {
     })
     if (!room) return
 
-    if (!roomRepository.addPlayer(room.id, host)) return
-
-    roomService.addSystemChatMessage(room.id, 'player_joined', { name: host.name })
-
-    this.sendWelcomeMessage(room, host)
-    this.updatePlayers(room.id)
-    this.updateSettings(room.id)
-
-    return room
+    this.join(room.code, socket, host.UUID)
   }
 
   changeSettings(socket: WebSocket, settings: ChangeableSettings): void {

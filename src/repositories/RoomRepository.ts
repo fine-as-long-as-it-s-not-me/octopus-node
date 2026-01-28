@@ -41,8 +41,10 @@ class RoomRepository extends BaseRepository<RoomData> {
     if (room.players.find((p) => p.id === player.id)) return false
 
     room.players.push(player)
-    if (room.players.length === 1) room.hostId = player.id
-    room.settings.lang = player.lang
+    if (room.players.length === 1) {
+      room.hostId = player.id
+      room.settings.lang = player.lang
+    }
 
     return true
   }
