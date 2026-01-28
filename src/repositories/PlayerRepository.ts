@@ -87,6 +87,12 @@ class PlayerRepository extends BaseRepository<PlayerData> {
       roomCode: room ? room.code : null,
     }
   }
+
+  initRound(player: PlayerData): void {
+    player.hasIncreasedDiscussionTime = false
+    player.hasDecreasedDiscussionTime = false
+    player.voted = false
+  }
 }
 
 const playerRepository = new PlayerRepository('players')

@@ -2,10 +2,8 @@ import { GameData } from '../data/GameData'
 import { RoomData } from '../data/RoomData'
 import { Phase } from '../data/types'
 
-export function getNextPhase(phase: Phase): Phase {
-  switch (phase) {
-    case Phase.RESULT:
-      return Phase.KEYWORD
+export function getNextPhase(game: GameData): Phase {
+  switch (game.phase) {
     case Phase.INIT:
       return Phase.KEYWORD
     case Phase.KEYWORD:
@@ -16,25 +14,31 @@ export function getNextPhase(phase: Phase): Phase {
       return Phase.VOTING
     case Phase.VOTING:
       return Phase.VOTE_RESULT
-    case Phase.VOTE_RESULT:
-      return Phase.GUESSING
+    case Phase.VOTE_RESULT: {
+      if (game.winningTeam !== null) return Phase.SCORE
+      else return Phase.GUESSING
+    }
     case Phase.GUESSING:
       return Phase.SCORE
     case Phase.SCORE:
-      return Phase.RESULT
+      return game.round === game.totalRounds ? Phase.RESULT : Phase.KEYWORD
+    case Phase.RESULT:
+      return Phase.END
     default:
-      return Phase.RESULT
+      return Phase.END
   }
 }
 
-export function getPhaseDuration(game: GameData, room: RoomData): number {
-  switch (game.phase) {
+export function getPhaseDuration(phase: Phase, room: RoomData): number {
+  switch (phase) {
+    case Phase.INIT:
+      return 0
     case Phase.KEYWORD:
       return 5
     case Phase.DRAWING:
       return room.players.length * room.settings.drawingTime
     case Phase.DISCUSSION:
-      return 30 + game.timeAlpha
+      return 30
     case Phase.VOTING:
       return 20
     case Phase.VOTE_RESULT:
@@ -45,6 +49,8 @@ export function getPhaseDuration(game: GameData, room: RoomData): number {
       return 15
     case Phase.RESULT:
       return 20
+    case Phase.END:
+      return 0
     default:
       return 0
   }

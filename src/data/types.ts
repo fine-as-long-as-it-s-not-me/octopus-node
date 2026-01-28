@@ -11,7 +11,7 @@ export type Language = 'en' | 'ko'
 export interface Settings {
   rounds: number
   maxPlayers: number
-  liars: number
+  octopusAmount: number
   drawingTime: number
   useCustomWord: boolean
   isCustomWordVoteOpen: boolean
@@ -22,7 +22,7 @@ export interface Settings {
 
 export type ChangeableSettings = Omit<
   Settings,
-  'lang' | 'isCustomWordVoteOpen' | 'customWordMinVotes' | 'liars'
+  'lang' | 'isCustomWordVoteOpen' | 'customWordMinVotes' | 'octopusAmount'
 >
 
 export interface Stroke {
@@ -41,8 +41,13 @@ export enum Phase {
   DRAWING = 'drawing',
   DISCUSSION = 'discussion',
   VOTING = 'voting',
-  VOTE_RESULT = 'voteResult',
+  VOTE_RESULT = 'vote-result',
   GUESSING = 'guessing',
   SCORE = 'score',
   RESULT = 'result',
+  END = 'end',
 }
+
+export type Team = 'OCTOPUS' | 'PLAYERS'
+
+export type Score = { total: number; delta: number }

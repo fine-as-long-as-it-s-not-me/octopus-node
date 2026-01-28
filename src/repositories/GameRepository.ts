@@ -1,11 +1,12 @@
 import { GameData } from '../data/GameData'
+import { PlayerData } from '../data/PlayerData'
 import { RoomData } from '../data/RoomData'
-import { Language } from '../data/types'
+import { Language, Phase, Score } from '../data/types'
 import keywords from '../domain/keywords'
 import { getNextPhase, getPhaseDuration } from '../lib/game'
-import { gameService } from '../services/GameService'
 import { BaseRepository } from './BaseRepository'
 import { canvasRepository } from './CanvasRepository'
+import { playerRepository } from './PlayerRepository'
 import { roomRepository } from './RoomRepository'
 
 class GameRepository extends BaseRepository<GameData> {
@@ -15,34 +16,21 @@ class GameRepository extends BaseRepository<GameData> {
 
     roomRepository.update(room.id, { ...room, game: game })
 
-    game.intervalId = setInterval(() => {
-      gameRepository.tick(game.id)
-    }, 1000)
     return game
   }
 
-  tick(gameId: number): void {
+  updatePhase(gameId: number, nextPhase?: Phase): number {
     const game = this.findById(gameId)
-    if (!game) return
+    if (!game) return 0
 
     const room = roomRepository.findById(game.roomId)
-    if (!room) return
+    if (!room) return 0
 
-    // 게임 타이머 관련 로직
-    const now = Date.now()
-    const elapsed = Math.floor((now - game.lastPhaseChange) / 1000)
-    const phaseDuration = getPhaseDuration(game, room)
-    let timeLeft = phaseDuration - elapsed
+    game.lastPhaseChange = Date.now()
+    game.phase = nextPhase ?? getNextPhase(game)
 
-    if (timeLeft < 0) {
-      game.lastPhaseChange = now
-      const nextPhase = getNextPhase(game.phase)
-      game.phase = nextPhase
-      timeLeft = getPhaseDuration(game, room)
-      gameService.phaseHandlers[game.phase](game, timeLeft)
-    }
-
-    gameService.tick(game.id, timeLeft)
+    const timeLeft = getPhaseDuration(game.phase, room)
+    return timeLeft
   }
 
   initRound(gameId: number, room: RoomData): void {
@@ -51,15 +39,39 @@ class GameRepository extends BaseRepository<GameData> {
 
     // 라운드 초기화
     game.round++
+
+    // 제시어 선정
     const { keyword, fakeWord } = this.getWords(room.lang)
     ;[game.keyword, game.fakeWord] = [keyword, fakeWord]
 
-    game.liars = [room.players[0].id] // 예시로 고정된 키워드 사용
-    game.painterId = null
+    // 라이어 선정
+    let selectedOctopuses: string[] = []
+    while (selectedOctopuses.length < room.settings.octopusAmount) {
+      const candidate = room.players[Math.floor(Math.random() * room.players.length)].UUID
+      if (!selectedOctopuses.includes(candidate)) {
+        selectedOctopuses.push(candidate)
+      }
+    }
+    game.octopuses = selectedOctopuses
 
+    // 투표 초기화
+    game.votes = new Map()
+    game.didVoteTie = false
+
+    // 그림 초기화
+
+    // canvas 초기화
+    game.painterId = null
     const canvas = canvasRepository.create({ gameId: game.id })
     game.canvasId = canvas.id
-    console.log('game initialized: canvasId ', game.canvasId)
+
+    // 게임 결과 초기화
+    game.foundOctopus = false
+    game.guessedWord = false
+    game.winningTeam = null
+
+    // 플레이어 초기화
+    room.players.forEach(playerRepository.initRound)
   }
 
   getWords(lang: Language): { category: string; keyword: string; fakeWord: string } {
@@ -83,6 +95,54 @@ class GameRepository extends BaseRepository<GameData> {
       keyword,
       fakeWord,
     }
+  }
+
+  changeDiscussionTime(player: PlayerData, gameId: number, amount: number): boolean {
+    const game = this.findById(gameId)
+    if (!game) return false
+
+    const room = roomRepository.findById(game.roomId)
+    if (!room) return false
+
+    if (amount > 0) player.hasIncreasedDiscussionTime = true
+    if (amount < 0) player.hasDecreasedDiscussionTime = true
+
+    game.lastPhaseChange += amount * 1000
+    return true
+  }
+
+  vote(game: GameData, player: PlayerData, targetPlayer: PlayerData): boolean {
+    if (game.phase !== Phase.VOTING) return false
+    if (player.voted) return false
+
+    const currentVotes = game.votes.get(targetPlayer.UUID) || 0
+    game.votes.set(targetPlayer.UUID, currentVotes + 1)
+    player.voted = true
+
+    return true
+  }
+
+  delete(gameId: number): boolean {
+    const game = this.findById(gameId)
+    if (!game) return false
+
+    if (game.intervalId) {
+      clearInterval(game.intervalId)
+      game.intervalId = null
+    }
+
+    const room = roomRepository.findById(game.roomId)
+    if (room) room.game = null
+
+    this.records.delete(gameId)
+    return true
+  }
+
+  getScores(gameId: number): { UUID: string; score: Score }[] {
+    const game = this.findById(gameId)
+    if (!game) return []
+
+    return Array.from(game.scores.entries()).map(([UUID, score]) => ({ UUID, score }))
   }
 }
 

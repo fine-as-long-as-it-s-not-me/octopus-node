@@ -1,7 +1,6 @@
 import { PlayerData } from '../data/PlayerData'
 import { RoomData } from '../data/RoomData'
 import { Language, Settings } from '../data/types'
-import { roomService } from '../services/RoomService'
 import { BaseRepository } from './BaseRepository'
 
 class RoomRepository extends BaseRepository<RoomData> {
@@ -14,11 +13,10 @@ class RoomRepository extends BaseRepository<RoomData> {
     code?: string
     settings: Settings
   }): RoomData {
+    // Validate code uniqueness
     let code = roomCode
     if (code) {
-      if (this.findByCode(code)) {
-        throw new Error('Room code already exists')
-      }
+      if (this.findByCode(code)) throw new Error('Room code already exists')
     } else {
       code = RoomData.nextCode.toString()
       while (this.findByCode(code)) {
@@ -27,6 +25,7 @@ class RoomRepository extends BaseRepository<RoomData> {
     }
 
     const room = new RoomData(host, settings, code)
+
     this.records.set(room.id, room)
 
     const res = this.findById(room.id)
@@ -38,9 +37,7 @@ class RoomRepository extends BaseRepository<RoomData> {
 
   findByCode(code: string): RoomData | null {
     for (const room of this.records.values()) {
-      if (room.code === code) {
-        return room
-      }
+      if (room.code === code) return room
     }
     return null
   }
@@ -51,10 +48,6 @@ class RoomRepository extends BaseRepository<RoomData> {
     player.roomId = roomId
     if (room.players.find((p) => p.id === player.id)) return
     room.players.push(player)
-    roomService.sendMessage(room, 'chat_added', {
-      player: { name: 'SYSTEM' },
-      text: `${player.name}님이 입장하셨습니다.`,
-    })
   }
 
   removePlayer(room: RoomData, playerId: number): void {
