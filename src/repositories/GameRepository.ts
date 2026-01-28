@@ -46,7 +46,7 @@ class GameRepository extends BaseRepository<GameData> {
 
     // 라이어 선정
     let selectedOctopuses: string[] = []
-    while (selectedOctopuses.length < room.settings.liars) {
+    while (selectedOctopuses.length < room.settings.octopusAmount) {
       const candidate = room.players[Math.floor(Math.random() * room.players.length)].UUID
       if (!selectedOctopuses.includes(candidate)) {
         selectedOctopuses.push(candidate)
@@ -56,6 +56,7 @@ class GameRepository extends BaseRepository<GameData> {
 
     // 투표 초기화
     game.votes = new Map()
+    game.didVoteTie = false
 
     // 그림 초기화
 

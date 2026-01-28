@@ -14,8 +14,10 @@ export function getNextPhase(game: GameData): Phase {
       return Phase.VOTING
     case Phase.VOTING:
       return Phase.VOTE_RESULT
-    case Phase.VOTE_RESULT:
-      return Phase.GUESSING
+    case Phase.VOTE_RESULT: {
+      if (game.winningTeam !== null) return Phase.SCORE
+      else return Phase.GUESSING
+    }
     case Phase.GUESSING:
       return Phase.SCORE
     case Phase.SCORE:

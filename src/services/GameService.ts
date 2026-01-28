@@ -9,6 +9,7 @@ import { playerService } from './PlayerService'
 import { canvasService } from './CanvasService'
 import { canvasRepository } from '../repositories/CanvasRepository'
 import { getPhaseDuration } from '../lib/game'
+import { normalizeString } from '../lib/string'
 
 class GameService {
   phaseStarters: Record<Phase, (game: GameData, timeLeft: number) => void> = {
@@ -186,22 +187,24 @@ class GameService {
       } else {
         // 라이어를 못 맞춘 경우
         game.foundOctopus = false
+        game.winningTeam = 'OCTOPUS'
       }
     } else {
       // 동점인 경우
-      if (game.didVoteTie) {
-        // 라이어 승리
-      } else {
+      if (!game.didVoteTie) {
         // 재투표
         game.didVoteTie = true
         gameRepository.updatePhase(game.id, Phase.VOTING)
         roomService.addSystemChatMessage(room.id, 'revote', {})
         return
+      } else {
+        // 두 번 동점이면 문어 승리
+        game.winningTeam = 'OCTOPUS'
       }
     }
 
     roomService.sendMessage(room, 'vote_result', {
-      voteResult,
+      topVotes,
       octopuses: game.octopuses.map((id) => {
         const player = playerRepository.findByUUID(id)
         if (!player) return null
@@ -210,9 +213,7 @@ class GameService {
     })
   }
 
-  startGuessingPhase(game: GameData): void {
-    // 라이어의 제시어 추측 단계
-  }
+  startGuessingPhase(game: GameData): void {}
 
   startRoundResultPhase(game: GameData): void {
     // 점수 집계 단계
@@ -222,6 +223,13 @@ class GameService {
     const scores = gameRepository.getScores(game.id)
     roomService.sendMessage(room, 'round_result', {
       scores,
+      tied: game.didVoteTie,
+      guessed: game.guessedWord,
+      octopuses: game.octopuses.map((id) => {
+        const player = playerRepository.findByUUID(id)
+        if (!player) return null
+        return playerRepository.getResponseDTO(player.id)
+      }),
     })
   }
 
@@ -299,6 +307,24 @@ class GameService {
     roomService.addSystemChatMessage(room.id, 'player_voted', {
       voterName: player.name,
     })
+  }
+
+  guessWord(socket: WebSocket, word: string): void {
+    const player = playerRepository.findBySocket(socket)
+    if (!player) return
+    const roomId = player.roomId
+    if (!roomId) return
+    const room = roomRepository.findById(roomId)
+    if (!room) return
+    const game = room.game
+    if (!game) return
+
+    if (game.phase !== Phase.GUESSING) return
+
+    if (!game.octopuses.includes(player.UUID)) return
+
+    const isCorrect = normalizeString(word) === normalizeString(game.keyword)
+    game.guessedWord = isCorrect
   }
 }
 
