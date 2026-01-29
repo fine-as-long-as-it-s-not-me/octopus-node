@@ -32,7 +32,7 @@ class GameService {
     const room = roomRepository.findById(player.roomId)
     if (!room) return
 
-    if (room.host.id !== player.id) return
+    if (room.hostId !== player.id) return
     if (room.game) return
 
     const game = gameRepository.create(room)
