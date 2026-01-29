@@ -43,11 +43,21 @@ export enum Phase {
   VOTING = 'voting',
   VOTE_RESULT = 'vote-result',
   GUESSING = 'guessing',
-  SCORE = 'score',
-  RESULT = 'result',
+  ROUND_RESULT = 'round-result',
+  GAME_RESULT = 'game-result',
   END = 'end',
 }
 
-export type Team = 'OCTOPUS' | 'PLAYERS'
+export enum Team {
+  OCTOPUS = 'octopus',
+  SQUID = 'squid',
+}
 
 export type Score = { total: number; delta: number }
+
+export type PlayerResponseDTO = {
+  id: number
+  UUID: string
+  name: string
+  roomCode: string | null
+}
