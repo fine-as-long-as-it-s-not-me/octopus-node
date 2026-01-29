@@ -1,4 +1,4 @@
-name: Deploy Node Prod (Blue-Green Routing)
+name: Deploy Node Prod
 
 on:
   push:
@@ -54,6 +54,9 @@ jobs:
             GREEN_PORT=3002
             CONTAINER_PORT=3000
 
+            OCI_REGION="ap-osaka-1"
+            OCI_AUTH="instance_principal"
+
             if ! command -v jq >/dev/null 2>&1; then
               sudo apt-get update -y
               sudo apt-get install -y jq
@@ -61,9 +64,15 @@ jobs:
 
             CUR_JSON=$(oci lb routing-policy get \
               --load-balancer-id "$LB_OCID" \
-              --routing-policy-name "$ROUTING_POLICY_NAME")
+              --routing-policy-name "$ROUTING_POLICY_NAME" \
+              --auth "$OCI_AUTH" \
+              --region "$OCI_REGION")
 
             CURRENT_SET=$(echo "$CUR_JSON" | jq -r --arg RN "$PROD_RULE_NAME" '.data.rules[] | select(.name==$RN) | .actions[0].backendSetName')
+
+            if [ -z "$CURRENT_SET" ] || [ "$CURRENT_SET" = "null" ]; then
+              exit 1
+            fi
 
             if [ "$CURRENT_SET" = "$BLUE_SET" ]; then
               TARGET_SET="$GREEN_SET"
@@ -89,23 +98,40 @@ jobs:
               -e PORT="$CONTAINER_PORT" \
               "$IMAGE"
 
+            OK=0
             for i in {1..20}; do
-              curl -sf "http://127.0.0.1:$TARGET_PORT/health" && break
-              curl -sf "http://127.0.0.1:$TARGET_PORT/" && break
+              if curl -sf "http://127.0.0.1:$TARGET_PORT/health" >/dev/null 2>&1; then
+                OK=1; break
+              fi
+              if curl -sf "http://127.0.0.1:$TARGET_PORT/" >/dev/null 2>&1; then
+                OK=1; break
+              fi
               sleep 3
             done
+
+            if [ "$OK" -ne 1 ]; then
+              docker logs --tail 200 "octopus-node-$TARGET_COLOR" >/dev/null 2>&1 || true
+              exit 1
+            fi
 
             UPDATED_RULES=$(echo "$CUR_JSON" | jq --arg RN "$PROD_RULE_NAME" --arg BS "$TARGET_SET" '
               .data.rules
               | map(if .name == $RN then (.actions[0].backendSetName = $BS) else . end)
             ')
 
+            echo "$UPDATED_RULES" | jq -e 'type=="array"' >/dev/null 2>&1 || exit 1
             echo "$UPDATED_RULES" > /tmp/rules.json
 
             oci lb routing-policy update \
               --load-balancer-id "$LB_OCID" \
               --routing-policy-name "$ROUTING_POLICY_NAME" \
-              --rules file:///tmp/rules.json
+              --rules file:///tmp/rules.json \
+              --force \
+              --auth "$OCI_AUTH" \
+              --region "$OCI_REGION" \
+              --wait-for-state SUCCEEDED \
+              --max-wait-seconds 900 \
+              --wait-interval-seconds 10
 
-            sleep 60
+            sleep 10
             docker rm -f "octopus-node-$OLD_COLOR" >/dev/null 2>&1 || true
