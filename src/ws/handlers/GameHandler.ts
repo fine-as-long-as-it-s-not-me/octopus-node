@@ -19,6 +19,7 @@ export const gameHandlers: SubTypeHandlerMap<GameHandlerHandlerMap> = {
   },
   guess(socket, data: GameGuessHandler) {
     // 라이어가 제시어 추측하기
-    gameService.guessWord(socket, data.word)
+    const { word } = data
+    gameService.guessWord(socket, word)
   },
 }

@@ -2,7 +2,7 @@ import { WebSocket } from 'ws'
 import { playerRepository } from '../repositories/PlayerRepository'
 import { roomRepository } from '../repositories/RoomRepository'
 import { gameRepository } from '../repositories/GameRepository'
-import { Phase } from '../data/types'
+import { Phase, Team } from '../data/types'
 import { GameData } from '../data/GameData'
 import { roomService } from './RoomService'
 import { playerService } from './PlayerService'
@@ -20,8 +20,8 @@ class GameService {
     [Phase.VOTING]: this.startVotingPhase.bind(this),
     [Phase.VOTE_RESULT]: this.startVoteResultPhase.bind(this),
     [Phase.GUESSING]: this.startGuessingPhase.bind(this),
-    [Phase.SCORE]: this.startRoundResultPhase.bind(this),
-    [Phase.RESULT]: this.startGameResultPhase.bind(this),
+    [Phase.ROUND_RESULT]: this.startRoundResultPhase.bind(this),
+    [Phase.GAME_RESULT]: this.startGameResultPhase.bind(this),
     [Phase.END]: this.startEndPhase.bind(this),
   }
 
@@ -180,6 +180,7 @@ class GameService {
 
     if (topVotes.length === 1) {
       const votedUUID = topVotes[0]
+      game.topVotedUUID = votedUUID
       const isOctopus = game.octopuses.includes(votedUUID)
       if (isOctopus) {
         // 라이어를 맞춘 경우
@@ -187,7 +188,7 @@ class GameService {
       } else {
         // 라이어를 못 맞춘 경우
         game.foundOctopus = false
-        game.winningTeam = 'OCTOPUS'
+        game.winningTeam = Team.SQUID
       }
     } else {
       // 동점인 경우
@@ -199,12 +200,15 @@ class GameService {
         return
       } else {
         // 두 번 동점이면 문어 승리
-        game.winningTeam = 'OCTOPUS'
+        game.winningTeam = Team.OCTOPUS
       }
     }
 
     roomService.sendMessage(room, 'vote_result', {
       voteResult: Array.from(voteResult.entries()),
+      votedPlayer: playerRepository.getResponseDTO(
+        playerRepository.findByUUID(game.topVotedUUID!)!.id,
+      ),
       octopuses: game.octopuses.map((id) => {
         const player = playerRepository.findByUUID(id)
         if (!player) return null
@@ -220,16 +224,16 @@ class GameService {
     const room = roomRepository.findById(game.roomId)
     if (!room) return
 
-    const scores = gameRepository.getScores(game.id)
+    const scores = gameRepository.calculateScores(game.id)
+    if (!scores) return
+
+    const ranks = gameRepository.getRanks(game.id)
+
     roomService.sendMessage(room, 'round_result', {
-      scores,
+      ranks,
       tied: game.didVoteTie,
       guessed: game.guessedWord,
-      octopuses: game.octopuses.map((id) => {
-        const player = playerRepository.findByUUID(id)
-        if (!player) return null
-        return playerRepository.getResponseDTO(player.id)
-      }),
+      isUnanimity: game.isUnanimity,
     })
   }
 
@@ -238,9 +242,10 @@ class GameService {
     const room = roomRepository.findById(game.roomId)
     if (!room) return
 
-    const scores = gameRepository.getScores(game.id)
+    const ranks = gameRepository.getRanks(game.id)
+
     roomService.sendMessage(room, 'game_result', {
-      scores,
+      ranks,
     })
   }
 
@@ -287,11 +292,11 @@ class GameService {
 
   vote(socket: WebSocket, targetUUID: string): void {
     const player = playerRepository.findBySocket(socket)
-    if (!player) return
-    const roomId = player.roomId
-    if (!roomId) return
-    const room = roomRepository.findById(roomId)
+    if (!player || !player.roomId) return
+
+    const room = roomRepository.findById(player.roomId)
     if (!room) return
+
     const game = room.game
     if (!game) return
 
@@ -311,11 +316,11 @@ class GameService {
 
   guessWord(socket: WebSocket, word: string): void {
     const player = playerRepository.findBySocket(socket)
-    if (!player) return
-    const roomId = player.roomId
-    if (!roomId) return
-    const room = roomRepository.findById(roomId)
+    if (!player || !player.roomId) return
+
+    const room = roomRepository.findById(player.roomId)
     if (!room) return
+
     const game = room.game
     if (!game) return
 
@@ -325,6 +330,13 @@ class GameService {
 
     const isCorrect = normalizeString(word) === normalizeString(game.keyword)
     game.guessedWord = isCorrect
+
+    roomService.addSystemChatMessage(room.id, 'octopus_guessed', {
+      name: player.name,
+      word,
+    })
+
+    gameRepository.updatePhase(game.id, Phase.ROUND_RESULT)
   }
 }
 

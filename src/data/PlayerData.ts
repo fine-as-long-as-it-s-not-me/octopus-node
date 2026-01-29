@@ -19,7 +19,7 @@ class PlayerData {
   // round states
   hasIncreasedDiscussionTime: boolean = false
   hasDecreasedDiscussionTime: boolean = false
-  voted: boolean = false
+  votedPlayerUUID: string | null = null
 
   constructor(
     UUID: string,
