@@ -46,7 +46,7 @@ jobs:
             IMAGE="${{ secrets.OCI_REGISTRY }}/axslwmgnmqcx/findtheoctopus-node:latest"
 
             LB_OCID="${{ secrets.OCI_LB_OCID }}"
-            ROUTING_POLICY_NAME="Octopus-Main-Policy"
+            ROUTING_POLICY_NAME="ProdPolicy"
             PROD_RULE_NAME="Prod_Node_Rule"
             BLUE_SET="NODE-BLUEset"
             GREEN_SET="NODE-GREENset"
