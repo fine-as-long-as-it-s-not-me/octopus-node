@@ -32,7 +32,7 @@ jobs:
     needs: build-and-push
     runs-on: ubuntu-latest
     steps:
-      - name: Blue-Green Switch via OCI Routing Policy (safe)
+      - name: Blue-Green Switch via OCI Routing Policy
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.OCI_HOST }}
@@ -40,11 +40,14 @@ jobs:
           key: ${{ secrets.OCI_KEY }}
           script: |
             set -e
+            set -x
+
+            export PATH="/home/ubuntu/bin:$PATH"
 
             IMAGE="${{ secrets.OCI_REGISTRY }}/axslwmgnmqcx/findtheoctopus-node:latest"
 
             LB_OCID="${{ secrets.OCI_LB_OCID }}"
-            ROUTING_POLICY_NAME="Octopus-Main-Policy"
+            ROUTING_POLICY_NAME="ProdPolicy"
             PROD_RULE_NAME="Prod_Node_Rule"
             BLUE_SET="NODE-BLUEset"
             GREEN_SET="NODE-GREENset"
@@ -52,42 +55,54 @@ jobs:
             GREEN_PORT=3002
             CONTAINER_PORT=3000
 
+            OCI_REGION="ap-osaka-1"
+            OCI_AUTH="instance_principal"
+
+            echo "STEP 0: ensure jq"
             if ! command -v jq >/dev/null 2>&1; then
               sudo apt-get update -y
               sudo apt-get install -y jq
             fi
 
-            echo "🔍 Reading current routing policy..."
-            CUR_JSON=$(oci lb routing-policy get --load-balancer-id "$LB_OCID" --routing-policy-name "$ROUTING_POLICY_NAME")
+            echo "STEP 1: read routing policy"
+            CUR_JSON=$(oci lb routing-policy get \
+              --load-balancer-id "$LB_OCID" \
+              --routing-policy-name "$ROUTING_POLICY_NAME" \
+              --auth "$OCI_AUTH" \
+              --region "$OCI_REGION")
+
+            echo "STEP 2: determine current backend set"
             CURRENT_SET=$(echo "$CUR_JSON" | jq -r --arg RN "$PROD_RULE_NAME" '.data.rules[] | select(.name==$RN) | .actions[0].backendSetName')
 
             if [ -z "$CURRENT_SET" ] || [ "$CURRENT_SET" = "null" ]; then
-              echo "❌ Cannot find rule name '$PROD_RULE_NAME' in routing policy '$ROUTING_POLICY_NAME'."
+              echo "ERROR: rule '$PROD_RULE_NAME' not found in routing policy '$ROUTING_POLICY_NAME'"
+              echo "$CUR_JSON" | jq -r '.data.rules[]?.name' || true
               exit 1
             fi
 
-            echo "✅ Current PROD backend set: $CURRENT_SET"
+            echo "CURRENT_SET=$CURRENT_SET"
 
+            echo "STEP 3: choose target"
             if [ "$CURRENT_SET" = "$BLUE_SET" ]; then
               TARGET_SET="$GREEN_SET"
               TARGET_COLOR="green"
               TARGET_PORT=$GREEN_PORT
               OLD_COLOR="blue"
-              OLD_PORT=$BLUE_PORT
             else
               TARGET_SET="$BLUE_SET"
               TARGET_COLOR="blue"
               TARGET_PORT=$BLUE_PORT
               OLD_COLOR="green"
-              OLD_PORT=$GREEN_PORT
             fi
 
-            echo "🚀 Switching to $TARGET_COLOR: set=$TARGET_SET, port=$TARGET_PORT"
+            echo "TARGET_SET=$TARGET_SET TARGET_COLOR=$TARGET_COLOR TARGET_PORT=$TARGET_PORT OLD_COLOR=$OLD_COLOR"
 
+            echo "STEP 4: docker login/pull"
             echo "${{ secrets.OCI_AUTH_TOKEN }}" | docker login "${{ secrets.OCI_REGISTRY }}" -u "${{ secrets.OCI_USERNAME }}" --password-stdin
             docker pull "$IMAGE"
 
-            docker rm -f "octopus-node-$TARGET_COLOR" >/dev/null 2>&1 || true
+            echo "STEP 5: run target container"
+            docker rm -f "octopus-node-$TARGET_COLOR" || true
 
             docker run -d --name "octopus-node-$TARGET_COLOR" \
               -p "$TARGET_PORT:$CONTAINER_PORT" \
@@ -96,7 +111,7 @@ jobs:
               -e PORT="$CONTAINER_PORT" \
               "$IMAGE"
 
-            echo "⏳ Waiting for health check..."
+            echo "STEP 6: health check"
             OK=0
             for i in {1..20}; do
               if curl -sf "http://127.0.0.1:$TARGET_PORT/health" >/dev/null 2>&1; then
@@ -109,35 +124,49 @@ jobs:
             done
 
             if [ "$OK" -ne 1 ]; then
-              echo "❌ Health check failed on http://127.0.0.1:$TARGET_PORT"
+              echo "ERROR: health check failed on port $TARGET_PORT"
+              docker ps -a
               docker logs --tail 200 "octopus-node-$TARGET_COLOR" || true
               exit 1
             fi
-            echo "✅ Node container is healthy on port $TARGET_PORT"
 
-            echo "🔁 Updating routing policy rule action backendSetName -> $TARGET_SET"
-
+            echo "STEP 7: build updated rules"
             UPDATED_RULES=$(echo "$CUR_JSON" | jq --arg RN "$PROD_RULE_NAME" --arg BS "$TARGET_SET" '
               .data.rules
-              | map(
-                  if .name == $RN
-                  then (.actions[0].backendSetName = $BS)
-                  else .
-                  end
-                )
+              | map(if .name == $RN then (.actions[0].backendSetName = $BS) else . end)
             ')
 
-            echo "$UPDATED_RULES" > /tmp/rules.json
+            echo "$UPDATED_RULES" | jq -e 'type=="array"' >/dev/null 2>&1
 
+            echo "$UPDATED_RULES" > /tmp/rules.json
+            cat /tmp/rules.json
+
+            echo "STEP 8: routing-policy update (force)"
             oci lb routing-policy update \
               --load-balancer-id "$LB_OCID" \
               --routing-policy-name "$ROUTING_POLICY_NAME" \
-              --rules file:///tmp/rules.json
+              --rules file:///tmp/rules.json \
+              --force \
+              --auth "$OCI_AUTH" \
+              --region "$OCI_REGION"
 
-            echo "✅ Routing policy switched to $TARGET_SET"
+            echo "STEP 9: verify routing policy switched"
+            NEW_JSON=$(oci lb routing-policy get \
+              --load-balancer-id "$LB_OCID" \
+              --routing-policy-name "$ROUTING_POLICY_NAME" \
+              --auth "$OCI_AUTH" \
+              --region "$OCI_REGION")
 
-            echo "🧹 Cleanup old container after stabilization..."
+            NEW_SET=$(echo "$NEW_JSON" | jq -r --arg RN "$PROD_RULE_NAME" '.data.rules[] | select(.name==$RN) | .actions[0].backendSetName')
+            echo "NEW_SET=$NEW_SET (expected $TARGET_SET)"
+
+            if [ "$NEW_SET" != "$TARGET_SET" ]; then
+              echo "ERROR: routing policy not updated yet (or failed)."
+              exit 1
+            fi
+
+            echo "STEP 10: cleanup old container after stabilization"
             sleep 60
-            docker rm -f "octopus-node-$OLD_COLOR" >/dev/null 2>&1 || true
+            docker rm -f "octopus-node-$OLD_COLOR" || true
 
-            echo "🎉 Active: $TARGET_COLOR ($TARGET_PORT) / backendSet: $TARGET_SET"
+            echo "DONE: Active=$TARGET_COLOR port=$TARGET_PORT backendSet=$TARGET_SET"
