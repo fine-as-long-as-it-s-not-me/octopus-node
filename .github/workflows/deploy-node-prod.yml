@@ -72,7 +72,7 @@ jobs:
               --region "$OCI_REGION")
 
             echo "STEP 2: determine current backend set"
-            CURRENT_SET=$(echo "$CUR_JSON" | jq -r --arg RN "$PROD_RULE_NAME" '.data.rules[] | select(.name==$RN) | .actions[0].backendSetName')
+            CURRENT_SET=$(echo "$CUR_JSON" | jq -r --arg RN "$PROD_RULE_NAME" '.data.rules[] | select(.name==$RN) | .actions[0]["backend-set-name"]')
 
             if [ -z "$CURRENT_SET" ] || [ "$CURRENT_SET" = "null" ]; then
               echo "ERROR: rule '$PROD_RULE_NAME' not found in routing policy '$ROUTING_POLICY_NAME'"
@@ -133,7 +133,7 @@ jobs:
             echo "STEP 7: build updated rules"
             UPDATED_RULES=$(echo "$CUR_JSON" | jq --arg RN "$PROD_RULE_NAME" --arg BS "$TARGET_SET" '
               .data.rules
-              | map(if .name == $RN then (.actions[0].backendSetName = $BS) else . end)
+              | map(if .name == $RN then (.actions[0]["backend-set-name"] = $BS) else . end)
             ')
 
             echo "$UPDATED_RULES" | jq -e 'type=="array"' >/dev/null 2>&1
