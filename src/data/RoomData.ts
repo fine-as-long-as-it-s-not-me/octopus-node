@@ -13,13 +13,11 @@ class RoomData {
   customWords = new Map<string, number>()
   hostId: number | null = null
   game: GameData | null = null
-  lang: Language
 
   constructor(settings: Settings, code: string) {
     this.id = RoomData.nextId++
     this.settings = settings
     this.code = code
-    this.lang = settings.lang
   }
 }
 

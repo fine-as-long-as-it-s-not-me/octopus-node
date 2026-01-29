@@ -21,7 +21,6 @@ class RoomService {
       code,
       settings: { ...DEFAULT_SETTING, ...settings, lang: host.lang },
     })
-    if (!room) return
 
     this.join(room.code, socket, host.UUID)
   }
@@ -81,12 +80,13 @@ class RoomService {
 
   updatePlayers(roomId: number): void {
     const room = roomRepository.findById(roomId)
-    if (!room || !room.hostId) return
+    if (!room || !room.hostId) throw new Error('Updating players failed')
 
     const host = playerRepository.findById(room.hostId)
+    if (!host) throw new Error('Updating players failed : no host')
 
     this.sendMessage(room, 'players_updated', {
-      hostUUID: host?.UUID,
+      hostUUID: host.UUID,
       players: room.players
         .map((p) => playerRepository.getResponseDTO(p.id))
         .filter((playerDTO) => playerDTO !== null),
@@ -95,7 +95,7 @@ class RoomService {
 
   updateSettings(roomId: number): void {
     const room = roomRepository.findById(roomId)
-    if (!room) return
+    if (!room) throw new Error('Updating settings failed')
     this.sendMessage(room, 'settings_updated', {
       settings: room.settings,
     })

@@ -41,7 +41,7 @@ class GameRepository extends BaseRepository<GameData> {
     game.round++
 
     // 제시어 선정
-    const { keyword, fakeWord } = this.getWords(room.lang)
+    const { keyword, fakeWord } = this.getWords(room.settings.lang)
     ;[game.keyword, game.fakeWord] = [keyword, fakeWord]
 
     // 라이어 선정
