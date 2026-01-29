@@ -45,7 +45,8 @@ class RoomService {
     if (!room) {
       this.createRoom(socket, undefined, code)
     } else {
-      roomRepository.addPlayer(room.id, player)
+      if (!roomRepository.addPlayer(room.id, player))
+        throw new Error('Adding player to room failed')
 
       roomService.addSystemChatMessage(room.id, 'player_joined', { name: player.name })
       this.sendWelcomeMessage(room, player)
