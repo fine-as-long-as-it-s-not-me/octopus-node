@@ -4,6 +4,7 @@ import { PlayerData } from '../data/PlayerData'
 import { roomRepository } from './RoomRepository'
 import { roomService } from '../services/RoomService'
 import { sendSocketMessage } from '../lib/socket'
+import { PlayerResponseDTO } from '../data/types'
 
 class PlayerRepository extends BaseRepository<PlayerData> {
   create({
@@ -74,7 +75,7 @@ class PlayerRepository extends BaseRepository<PlayerData> {
     return null
   }
 
-  getResponseDTO(id: number) {
+  getResponseDTO(id: number): PlayerResponseDTO | null {
     const player = this.findById(id)
     if (!player) return null
 
@@ -91,7 +92,7 @@ class PlayerRepository extends BaseRepository<PlayerData> {
   initRound(player: PlayerData): void {
     player.hasIncreasedDiscussionTime = false
     player.hasDecreasedDiscussionTime = false
-    player.voted = false
+    player.votedPlayerUUID = null
   }
 }
 

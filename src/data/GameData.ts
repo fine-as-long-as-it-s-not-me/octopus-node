@@ -18,8 +18,10 @@ class GameData {
   didVoteTie = false
   octopuses: string[] = []
   votes: Map<string, number> = new Map()
+  topVotedUUID: string | null = null
   foundOctopus: boolean = false
   guessedWord: boolean = false
+  isUnanimity: boolean = false
   winningTeam: Team | null = null
 
   // phase state

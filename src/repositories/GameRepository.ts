@@ -1,7 +1,7 @@
 import { GameData } from '../data/GameData'
 import { PlayerData } from '../data/PlayerData'
 import { RoomData } from '../data/RoomData'
-import { Language, Phase, Score } from '../data/types'
+import { Language, Phase, PlayerResponseDTO, Score, Team } from '../data/types'
 import keywords from '../domain/keywords'
 import { getNextPhase, getPhaseDuration } from '../lib/game'
 import { BaseRepository } from './BaseRepository'
@@ -41,7 +41,7 @@ class GameRepository extends BaseRepository<GameData> {
     game.round++
 
     // 제시어 선정
-    const { keyword, fakeWord } = this.getWords(room.lang)
+    const { keyword, fakeWord } = this.getWords(room.settings.lang)
     ;[game.keyword, game.fakeWord] = [keyword, fakeWord]
 
     // 라이어 선정
@@ -57,18 +57,18 @@ class GameRepository extends BaseRepository<GameData> {
     // 투표 초기화
     game.votes = new Map()
     game.didVoteTie = false
-
-    // 그림 초기화
-
-    // canvas 초기화
-    game.painterId = null
-    const canvas = canvasRepository.create({ gameId: game.id })
-    game.canvasId = canvas.id
+    game.topVotedUUID = null
 
     // 게임 결과 초기화
     game.foundOctopus = false
     game.guessedWord = false
+    game.isUnanimity = false
     game.winningTeam = null
+
+    // 그림 초기화
+    game.painterId = null
+    const canvas = canvasRepository.create({ gameId: game.id })
+    game.canvasId = canvas.id
 
     // 플레이어 초기화
     room.players.forEach(playerRepository.initRound)
@@ -113,12 +113,11 @@ class GameRepository extends BaseRepository<GameData> {
 
   vote(game: GameData, player: PlayerData, targetPlayer: PlayerData): boolean {
     if (game.phase !== Phase.VOTING) return false
-    if (player.voted) return false
+    if (player.votedPlayerUUID !== null) return false
 
     const currentVotes = game.votes.get(targetPlayer.UUID) || 0
     game.votes.set(targetPlayer.UUID, currentVotes + 1)
-    player.voted = true
-
+    player.votedPlayerUUID = targetPlayer.UUID
     return true
   }
 
@@ -136,6 +135,68 @@ class GameRepository extends BaseRepository<GameData> {
 
     this.records.delete(gameId)
     return true
+  }
+
+  calculateScores(gameId: number) {
+    const game = this.findById(gameId)
+    if (!game) throw new Error('Scores calculation failed : no game')
+
+    const room = roomRepository.findById(game.roomId)
+    if (!room) throw new Error('Scores calculation failed : no room')
+
+    room.players.forEach((player) => {
+      let delta = 0
+
+      if (game.octopuses.includes(player.UUID)) {
+        // 문어
+        if (game.winningTeam === Team.OCTOPUS) {
+          // 문어 승리
+          delta = 20 - (game.votes.get(player.UUID) || 0)
+        } else {
+          // 문어 패배
+          if (game.isUnanimity && game.topVotedUUID === player.UUID) {
+            // 만장일치로 패배
+            delta = -10
+          }
+        }
+      } else {
+        // 오징어
+        if (game.winningTeam === Team.SQUID) {
+          // 오징어 승리
+          delta = 5
+          if (game.isUnanimity) {
+            // 만장일치
+            delta += 20
+          } else {
+            // 문어 맞춘 플레이어에게 +5
+            if (game.octopuses.includes(player.votedPlayerUUID || '')) delta += 5
+          }
+        }
+      }
+
+      const total = (game.scores.get(player.UUID)?.total || 0) + delta
+
+      game.scores.set(player.UUID, { total, delta })
+    })
+
+    return game.scores
+  }
+
+  getRanks(gameId: number): { player: PlayerResponseDTO; score: Score }[] {
+    const game = this.findById(gameId)
+    if (!game) return []
+
+    return Array.from(game.scores.entries())
+      .map(([UUID, score]) => {
+        const player = playerRepository.findByUUID(UUID)
+        if (!player) return null
+        return {
+          player: playerRepository.getResponseDTO(player.id),
+          score,
+        }
+      })
+      .filter((entry): entry is { player: any; score: any } => entry !== null)
+      .sort((a, b) => b.score.total - a.score.total)
   }
 
   getScores(gameId: number): { UUID: string; score: Score }[] {

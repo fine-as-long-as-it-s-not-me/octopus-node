@@ -18,15 +18,11 @@ class RoomService {
 
     // 설정한 세팅과, 기본 세팅 조합해서 방 생성
     const room = roomRepository.create({
-      host,
       code,
       settings: { ...DEFAULT_SETTING, ...settings, lang: host.lang },
     })
-    this.sendWelcomeMessage(room, host)
-    this.updatePlayers(room.id)
-    this.updateSettings(room.id)
 
-    return room
+    this.join(room.code, socket, host.UUID)
   }
 
   changeSettings(socket: WebSocket, settings: ChangeableSettings): void {
@@ -34,7 +30,7 @@ class RoomService {
     if (!player || !player.roomId) return sendSocketMessage(socket, 'error')
 
     let room = roomRepository.findById(player.roomId)
-    if (!room || room.host.id !== player.id) return sendSocketMessage(socket, 'error')
+    if (!room || room.hostId !== player.id) return sendSocketMessage(socket, 'error')
 
     roomRepository.update(room.id, { settings: { ...room.settings, ...settings } })
     this.updateSettings(room.id)
@@ -49,7 +45,8 @@ class RoomService {
     if (!room) {
       this.createRoom(socket, undefined, code)
     } else {
-      roomRepository.addPlayer(room.id, player)
+      if (!roomRepository.addPlayer(room.id, player))
+        throw new Error('Adding player to room failed')
 
       roomService.addSystemChatMessage(room.id, 'player_joined', { name: player.name })
       this.sendWelcomeMessage(room, player)
@@ -84,9 +81,13 @@ class RoomService {
 
   updatePlayers(roomId: number): void {
     const room = roomRepository.findById(roomId)
-    if (!room) return
+    if (!room || !room.hostId) throw new Error('Updating players failed')
+
+    const host = playerRepository.findById(room.hostId)
+    if (!host) throw new Error('Updating players failed : no host')
+
     this.sendMessage(room, 'players_updated', {
-      hostUUID: room.host.UUID,
+      hostUUID: host.UUID,
       players: room.players
         .map((p) => playerRepository.getResponseDTO(p.id))
         .filter((playerDTO) => playerDTO !== null),
@@ -95,7 +96,7 @@ class RoomService {
 
   updateSettings(roomId: number): void {
     const room = roomRepository.findById(roomId)
-    if (!room) return
+    if (!room) throw new Error('Updating settings failed')
     this.sendMessage(room, 'settings_updated', {
       settings: room.settings,
     })

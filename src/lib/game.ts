@@ -15,14 +15,14 @@ export function getNextPhase(game: GameData): Phase {
     case Phase.VOTING:
       return Phase.VOTE_RESULT
     case Phase.VOTE_RESULT: {
-      if (game.winningTeam !== null) return Phase.SCORE
+      if (game.winningTeam !== null) return Phase.ROUND_RESULT
       else return Phase.GUESSING
     }
     case Phase.GUESSING:
-      return Phase.SCORE
-    case Phase.SCORE:
-      return game.round === game.totalRounds ? Phase.RESULT : Phase.KEYWORD
-    case Phase.RESULT:
+      return Phase.ROUND_RESULT
+    case Phase.ROUND_RESULT:
+      return game.round === game.totalRounds ? Phase.GAME_RESULT : Phase.KEYWORD
+    case Phase.GAME_RESULT:
       return Phase.END
     default:
       return Phase.END
@@ -45,9 +45,9 @@ export function getPhaseDuration(phase: Phase, room: RoomData): number {
       return 15
     case Phase.GUESSING:
       return 30
-    case Phase.SCORE:
+    case Phase.ROUND_RESULT:
       return 15
-    case Phase.RESULT:
+    case Phase.GAME_RESULT:
       return 20
     case Phase.END:
       return 0
