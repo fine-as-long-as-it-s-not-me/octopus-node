@@ -1,4 +1,4 @@
-name: Deploy Node Prod
+name: Deploy Node Prod (Blue-Green Routing)
 
 on:
   push:
@@ -32,7 +32,7 @@ jobs:
     needs: build-and-push
     runs-on: ubuntu-latest
     steps:
-      - name: Blue-Green Switch via OCI Routing Policy (safe)
+      - name: Blue-Green Switch via OCI Routing Policy (debug enabled)
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.OCI_HOST }}
@@ -40,6 +40,7 @@ jobs:
           key: ${{ secrets.OCI_KEY }}
           script: |
             set -e
+            set -x
 
             export PATH="/home/ubuntu/bin:$PATH"
 
@@ -57,23 +58,31 @@ jobs:
             OCI_REGION="ap-osaka-1"
             OCI_AUTH="instance_principal"
 
+            echo "STEP 0: ensure jq"
             if ! command -v jq >/dev/null 2>&1; then
               sudo apt-get update -y
               sudo apt-get install -y jq
             fi
 
+            echo "STEP 1: read routing policy"
             CUR_JSON=$(oci lb routing-policy get \
               --load-balancer-id "$LB_OCID" \
               --routing-policy-name "$ROUTING_POLICY_NAME" \
               --auth "$OCI_AUTH" \
               --region "$OCI_REGION")
 
+            echo "STEP 2: determine current backend set"
             CURRENT_SET=$(echo "$CUR_JSON" | jq -r --arg RN "$PROD_RULE_NAME" '.data.rules[] | select(.name==$RN) | .actions[0].backendSetName')
 
             if [ -z "$CURRENT_SET" ] || [ "$CURRENT_SET" = "null" ]; then
+              echo "ERROR: rule '$PROD_RULE_NAME' not found in routing policy '$ROUTING_POLICY_NAME'"
+              echo "$CUR_JSON" | jq -r '.data.rules[]?.name' || true
               exit 1
             fi
 
+            echo "CURRENT_SET=$CURRENT_SET"
+
+            echo "STEP 3: choose target"
             if [ "$CURRENT_SET" = "$BLUE_SET" ]; then
               TARGET_SET="$GREEN_SET"
               TARGET_COLOR="green"
@@ -86,10 +95,14 @@ jobs:
               OLD_COLOR="green"
             fi
 
+            echo "TARGET_SET=$TARGET_SET TARGET_COLOR=$TARGET_COLOR TARGET_PORT=$TARGET_PORT OLD_COLOR=$OLD_COLOR"
+
+            echo "STEP 4: docker login/pull"
             echo "${{ secrets.OCI_AUTH_TOKEN }}" | docker login "${{ secrets.OCI_REGISTRY }}" -u "${{ secrets.OCI_USERNAME }}" --password-stdin
             docker pull "$IMAGE"
 
-            docker rm -f "octopus-node-$TARGET_COLOR" >/dev/null 2>&1 || true
+            echo "STEP 5: run target container"
+            docker rm -f "octopus-node-$TARGET_COLOR" || true
 
             docker run -d --name "octopus-node-$TARGET_COLOR" \
               -p "$TARGET_PORT:$CONTAINER_PORT" \
@@ -98,6 +111,7 @@ jobs:
               -e PORT="$CONTAINER_PORT" \
               "$IMAGE"
 
+            echo "STEP 6: health check"
             OK=0
             for i in {1..20}; do
               if curl -sf "http://127.0.0.1:$TARGET_PORT/health" >/dev/null 2>&1; then
@@ -110,28 +124,49 @@ jobs:
             done
 
             if [ "$OK" -ne 1 ]; then
-              docker logs --tail 200 "octopus-node-$TARGET_COLOR" >/dev/null 2>&1 || true
+              echo "ERROR: health check failed on port $TARGET_PORT"
+              docker ps -a
+              docker logs --tail 200 "octopus-node-$TARGET_COLOR" || true
               exit 1
             fi
 
+            echo "STEP 7: build updated rules"
             UPDATED_RULES=$(echo "$CUR_JSON" | jq --arg RN "$PROD_RULE_NAME" --arg BS "$TARGET_SET" '
               .data.rules
               | map(if .name == $RN then (.actions[0].backendSetName = $BS) else . end)
             ')
 
-            echo "$UPDATED_RULES" | jq -e 'type=="array"' >/dev/null 2>&1 || exit 1
-            echo "$UPDATED_RULES" > /tmp/rules.json
+            echo "$UPDATED_RULES" | jq -e 'type=="array"' >/dev/null 2>&1
 
+            echo "$UPDATED_RULES" > /tmp/rules.json
+            cat /tmp/rules.json
+
+            echo "STEP 8: routing-policy update (force)"
             oci lb routing-policy update \
               --load-balancer-id "$LB_OCID" \
               --routing-policy-name "$ROUTING_POLICY_NAME" \
               --rules file:///tmp/rules.json \
               --force \
               --auth "$OCI_AUTH" \
-              --region "$OCI_REGION" \
-              --wait-for-state SUCCEEDED \
-              --max-wait-seconds 900 \
-              --wait-interval-seconds 10
+              --region "$OCI_REGION"
 
-            sleep 10
-            docker rm -f "octopus-node-$OLD_COLOR" >/dev/null 2>&1 || true
+            echo "STEP 9: verify routing policy switched"
+            NEW_JSON=$(oci lb routing-policy get \
+              --load-balancer-id "$LB_OCID" \
+              --routing-policy-name "$ROUTING_POLICY_NAME" \
+              --auth "$OCI_AUTH" \
+              --region "$OCI_REGION")
+
+            NEW_SET=$(echo "$NEW_JSON" | jq -r --arg RN "$PROD_RULE_NAME" '.data.rules[] | select(.name==$RN) | .actions[0].backendSetName')
+            echo "NEW_SET=$NEW_SET (expected $TARGET_SET)"
+
+            if [ "$NEW_SET" != "$TARGET_SET" ]; then
+              echo "ERROR: routing policy not updated yet (or failed)."
+              exit 1
+            fi
+
+            echo "STEP 10: cleanup old container after stabilization"
+            sleep 60
+            docker rm -f "octopus-node-$OLD_COLOR" || true
+
+            echo "DONE: Active=$TARGET_COLOR port=$TARGET_PORT backendSet=$TARGET_SET"
