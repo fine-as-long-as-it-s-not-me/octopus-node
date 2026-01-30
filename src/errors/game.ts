@@ -6,10 +6,6 @@ export const GAME_NOT_FOUND_ERROR = new Error('Game not found', {
   cause: 'GAME_NOT_FOUND',
 })
 
-export const ROOM_NOT_FOUND_ERROR = new Error('Room not found', {
-  cause: 'ROOM_NOT_FOUND',
-})
-
 export const GAME_ALREADY_IN_PROGRESS_ERROR = new Error('Game already in progress in this room', {
   cause: 'GAME_ALREADY_IN_PROGRESS',
 })

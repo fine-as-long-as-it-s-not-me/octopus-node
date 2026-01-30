@@ -6,7 +6,6 @@ import { roomRepository } from '../repositories/RoomRepository'
 import { DEFAULT_SETTING } from '../consts'
 import { playerService } from './PlayerService'
 import { ChangeableSettings } from '../data/types'
-import { sendSocketMessage } from '../lib/socket'
 import { chatService } from './ChatService'
 import {
   ONLY_HOST_CAN_CHANGE_SETTINGS_ERROR,
@@ -20,10 +19,7 @@ import { PLAYER_NOT_IN_ROOM_ERROR, PLAYER_UNREGISTERED_ERROR } from '../errors/p
 class RoomService {
   createRoom(socket: WebSocket, settings?: ChangeableSettings, code?: string) {
     const host = playerRepository.findBySocket(socket)
-    if (!host) {
-      sendSocketMessage(socket, 'unregistered')
-      throw PLAYER_UNREGISTERED_ERROR
-    }
+    if (!host) throw PLAYER_UNREGISTERED_ERROR
 
     // 설정한 세팅과, 기본 세팅 조합해서 방 생성
     const room = roomRepository.create({
@@ -36,20 +32,13 @@ class RoomService {
 
   changeSettings(socket: WebSocket, settings: ChangeableSettings): void {
     const player = playerRepository.findBySocket(socket)
-    if (!player || !player.roomId) {
-      sendSocketMessage(socket, 'error')
-      throw PLAYER_NOT_IN_ROOM_ERROR
-    }
+    if (!player) throw PLAYER_UNREGISTERED_ERROR
+    if (!player.roomId) throw PLAYER_NOT_IN_ROOM_ERROR
 
     let room = roomRepository.findById(player.roomId)
-    if (!room) {
-      sendSocketMessage(socket, 'error')
-      throw ROOM_NOT_FOUND_ERROR
-    }
-    if (room.hostId !== player.id) {
-      sendSocketMessage(socket, 'error')
-      throw ONLY_HOST_CAN_CHANGE_SETTINGS_ERROR
-    }
+    if (!room) throw ROOM_NOT_FOUND_ERROR
+
+    if (room.hostId !== player.id) throw ONLY_HOST_CAN_CHANGE_SETTINGS_ERROR
 
     roomRepository.update(room.id, { settings: { ...room.settings, ...settings } })
     this.updateSettings(room.id)
@@ -58,10 +47,7 @@ class RoomService {
   // 플레이어 추가
   join(code: string, socket: WebSocket, UUID: string): void {
     let player = playerRepository.findByUUID(UUID)
-    if (!player) {
-      sendSocketMessage(socket, 'unregistered')
-      throw PLAYER_UNREGISTERED_ERROR
-    }
+    if (!player) throw PLAYER_UNREGISTERED_ERROR
 
     const room = roomRepository.findByCode(code)
     if (!room) {
@@ -78,10 +64,7 @@ class RoomService {
 
   joinRandom(socket: WebSocket, UUID: string): void {
     let player = playerRepository.findByUUID(UUID)
-    if (!player) {
-      sendSocketMessage(socket, 'unregistered')
-      throw PLAYER_UNREGISTERED_ERROR
-    }
+    if (!player) throw PLAYER_UNREGISTERED_ERROR
 
     let room = roomRepository.getRandomRoom(player.lang)
     if (room && room.code) this.join(room.code, socket, UUID)

@@ -2,12 +2,12 @@ import { DECREASE_TIME_AMOUNT, INCREASE_TIME_AMOUNT } from '../../consts'
 import { discussionService } from '../../services/DiscussionService'
 import { SubTypeHandlerMap } from '../types'
 
-type change_time = {
+type ChangeTimeHandler = {
   type: 'increase' | 'decrease'
 }
 
 type DiscussionHandlerHandlerMap = {
-  change_time: change_time
+  change_time: ChangeTimeHandler
 }
 
 export const discussionHandlers: SubTypeHandlerMap<DiscussionHandlerHandlerMap> = {
