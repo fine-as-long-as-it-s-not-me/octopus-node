@@ -3,6 +3,7 @@ import { PlayerData } from '../data/PlayerData'
 import { RoomData } from '../data/RoomData'
 import { Language, Phase, PlayerResponseDTO, Score, Team } from '../data/types'
 import keywords from '../domain/keywords'
+import { GAME_NOT_FOUND_ERROR, ROOM_NOT_FOUND_ERROR, ROUND_INIT_ERROR } from '../errors/game'
 import { getNextPhase, getPhaseDuration } from '../lib/game'
 import { BaseRepository } from './BaseRepository'
 import { canvasRepository } from './CanvasRepository'
@@ -35,7 +36,7 @@ class GameRepository extends BaseRepository<GameData> {
 
   initRound(gameId: number, room: RoomData): void {
     const game = this.findById(gameId)
-    if (!game) return
+    if (!game) throw ROUND_INIT_ERROR
 
     // 라운드 초기화
     game.round++
@@ -139,10 +140,10 @@ class GameRepository extends BaseRepository<GameData> {
 
   calculateScores(gameId: number) {
     const game = this.findById(gameId)
-    if (!game) throw new Error('Scores calculation failed : no game')
+    if (!game) throw GAME_NOT_FOUND_ERROR
 
     const room = roomRepository.findById(game.roomId)
-    if (!room) throw new Error('Scores calculation failed : no room')
+    if (!room) throw ROOM_NOT_FOUND_ERROR
 
     room.players.forEach((player) => {
       let delta = 0

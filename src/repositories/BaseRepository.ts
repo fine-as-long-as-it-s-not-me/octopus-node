@@ -23,9 +23,7 @@ export abstract class BaseRepository<T> {
   search(predicate: (item: T) => boolean): T[] {
     const results: T[] = []
     for (const item of this.records.values()) {
-      if (predicate(item)) {
-        results.push(item)
-      }
+      if (predicate(item)) results.push(item)
     }
     return results
   }

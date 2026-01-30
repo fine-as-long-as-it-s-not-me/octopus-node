@@ -28,7 +28,8 @@ class GameService {
 
   startGame(socket: WebSocket): void {
     const player = playerRepository.findBySocket(socket)
-    if (!player || !player.roomId) throw new Error('Player not found or not in a room')
+    if (!player || !player.roomId)
+      throw new Error('Player not found or not in a room', { cause: 'PLAYER_NOT_IN_ROOM' })
 
     const room = roomRepository.findById(player.roomId)
     if (!room) throw new Error('Room not found')
