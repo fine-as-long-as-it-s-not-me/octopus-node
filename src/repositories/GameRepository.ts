@@ -43,7 +43,7 @@ class GameRepository extends BaseRepository<GameData> {
     game.round++
 
     // 제시어 선정
-    const { keyword, fakeWord } = this.getWords(room.settings.lang)
+    const { keyword, fakeWord } = this.getWords(room)
     ;[game.keyword, game.fakeWord] = [keyword, fakeWord]
 
     // 라이어 선정
@@ -76,21 +76,37 @@ class GameRepository extends BaseRepository<GameData> {
     room.players.forEach(playerRepository.initRound)
   }
 
-  getWords(lang: Language): { category: string; keyword: string; fakeWord: string } {
-    // 카테고리에 따른 단어 선택
-    const categories = Object.keys(keywords)
-    const category = categories[Math.floor(Math.random() * categories.length)]
-    const wordList = keywords[category as keyof typeof keywords][lang]
+  getWords(room: RoomData): { category: string; keyword: string; fakeWord: string } {
+    let category: string, keyword: string, fakeWord: string
 
-    console.log(categories, category, lang)
-    console.log('wordList:', wordList)
+    if (room.settings.useCustomWord && room.customWords.size >= 2) {
+      // 커스텀 단어 사용
+      const customWordsArray = Array.from(room.customWords)
 
-    const i1 = Math.floor(Math.random() * wordList.length)
-    let i2
-    while (i1 === (i2 = Math.floor(Math.random() * wordList.length))) {}
+      const i1 = Math.floor(Math.random() * customWordsArray.length)
+      let i2
+      while (i1 === (i2 = Math.floor(Math.random() * customWordsArray.length))) {}
 
-    const keyword = wordList[i1]
-    const fakeWord = wordList[i2]
+      category = 'custom'
+      keyword = customWordsArray[i1][0]
+      fakeWord = customWordsArray[i2][0]
+    } else {
+      const lang: Language = room.settings.lang
+      // 카테고리에 따른 단어 선택
+      const categories = Object.keys(keywords)
+      category = categories[Math.floor(Math.random() * categories.length)]
+      const wordList = keywords[category as keyof typeof keywords][lang]
+
+      console.log(categories, category, lang)
+      console.log('wordList:', wordList)
+
+      const i1 = Math.floor(Math.random() * wordList.length)
+      let i2
+      while (i1 === (i2 = Math.floor(Math.random() * wordList.length))) {}
+
+      keyword = wordList[i1]
+      fakeWord = wordList[i2]
+    }
 
     return {
       category,
@@ -206,6 +222,13 @@ class GameRepository extends BaseRepository<GameData> {
     if (!game) return []
 
     return Array.from(game.scores.entries()).map(([UUID, score]) => ({ UUID, score }))
+  }
+
+  allPlayersVoted(game: GameData): boolean {
+    const room = roomRepository.findById(game.roomId)
+    if (!room) throw ROOM_NOT_FOUND_ERROR
+
+    return room.players.every((player) => player.votedPlayerUUID !== null)
   }
 }
 

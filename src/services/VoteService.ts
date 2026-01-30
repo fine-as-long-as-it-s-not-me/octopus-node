@@ -7,6 +7,7 @@ import { chatService } from './ChatService'
 import { GAME_NOT_FOUND_ERROR } from '../errors/game'
 import { PLAYER_NOT_FOUND_ERROR, PLAYER_NOT_IN_ROOM_ERROR } from '../errors/player'
 import { ROOM_NOT_FOUND_ERROR } from '../errors/room'
+import { gameService } from './GameService'
 
 class VoteService {
   vote(socket: WebSocket, targetUUID: string): void {
@@ -32,6 +33,13 @@ class VoteService {
     chatService.addSystemChatMessage(room.id, 'player_voted', {
       voterName: player.name,
     })
+
+    // 모든 플레이어가 투표를 완료했으면 다음 단계로
+
+    if (gameRepository.allPlayersVoted(game)) {
+      const timeLeft = gameRepository.updatePhase(game.id, Phase.VOTE_RESULT)
+      gameService.phaseStarters[game.phase](game, timeLeft)
+    }
   }
 }
 

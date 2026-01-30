@@ -5,7 +5,7 @@ import { playerRepository } from '../repositories/PlayerRepository'
 import { roomRepository } from '../repositories/RoomRepository'
 import { DEFAULT_SETTING } from '../consts'
 import { playerService } from './PlayerService'
-import { ChangeableSettings } from '../data/types'
+import { ChangeableSettings, Phase } from '../data/types'
 import { chatService } from './ChatService'
 import {
   CUSTOM_WORD_VOTE_CLOSED_ERROR,
@@ -121,7 +121,10 @@ class RoomService {
   }
 
   sendWelcomeMessage(room: RoomData, player: PlayerData): void {
-    playerService.sendMessage(player.id, 'welcome', { roomCode: room.code })
+    playerService.sendMessage(player.id, 'welcome', {
+      roomCode: room.code,
+      phase: room.game?.phase ?? Phase.END,
+    })
   }
 
   sendMessage(room: RoomData, type: string, data: any): void {
