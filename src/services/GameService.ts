@@ -10,6 +10,7 @@ import { canvasService } from './CanvasService'
 import { canvasRepository } from '../repositories/CanvasRepository'
 import { getPhaseDuration } from '../lib/game'
 import { normalizeString } from '../lib/string'
+import { chatService } from './ChatService'
 
 class GameService {
   phaseStarters: Record<Phase, (game: GameData, timeLeft: number) => void> = {
@@ -27,16 +28,16 @@ class GameService {
 
   startGame(socket: WebSocket): void {
     const player = playerRepository.findBySocket(socket)
-    if (!player || !player.roomId) return
+    if (!player || !player.roomId) throw new Error('Player not found or not in a room')
 
     const room = roomRepository.findById(player.roomId)
-    if (!room) return
+    if (!room) throw new Error('Room not found')
 
-    if (room.hostId !== player.id) return
-    if (room.game) return
+    if (room.hostId !== player.id) throw new Error('Only the host can start the game')
+    if (room.game) throw new Error('Game already in progress in this room')
 
     const game = gameRepository.create(room)
-    if (!game) return
+    if (!game) throw new Error('Failed to create game')
 
     // broadcast game started message
     roomService.sendMessage(room, 'game_started', {})
@@ -196,7 +197,7 @@ class GameService {
         // 재투표
         game.didVoteTie = true
         gameRepository.updatePhase(game.id, Phase.VOTING)
-        roomService.addSystemChatMessage(room.id, 'revote', {})
+        chatService.addSystemChatMessage(room.id, 'revote', {})
         return
       } else {
         // 두 번 동점이면 문어 승리
@@ -258,62 +259,6 @@ class GameService {
     roomService.sendMessage(room, 'game_ended', {})
   }
 
-  changeDiscussionTime(socket: WebSocket, amount: number): void {
-    const player = playerRepository.findBySocket(socket)
-    if (!player) return
-    const roomId = player.roomId
-    if (!roomId) return
-    const room = roomRepository.findById(roomId)
-    if (!room) return
-    const game = room.game
-    if (!game) return
-
-    if (game.phase !== Phase.DISCUSSION) return
-
-    if (amount > 0 && player.hasIncreasedDiscussionTime)
-      return playerService.sendMessage(player.id, 'error', {
-        message: 'You have already extended the discussion time.',
-      })
-    if (amount < 0 && player.hasDecreasedDiscussionTime)
-      return playerService.sendMessage(player.id, 'error', {
-        message: 'You have already shortened the discussion time.',
-      })
-
-    const res = gameRepository.changeDiscussionTime(player, game.id, amount)
-    if (!res) return
-
-    roomService.addSystemChatMessage(room.id, 'discussion_time_changed', {
-      amount,
-      name: player.name,
-    })
-
-    this.tick(game.id)
-  }
-
-  vote(socket: WebSocket, targetUUID: string): void {
-    const player = playerRepository.findBySocket(socket)
-    if (!player || !player.roomId) return
-
-    const room = roomRepository.findById(player.roomId)
-    if (!room) return
-
-    const game = room.game
-    if (!game) return
-
-    if (game.phase !== Phase.VOTING) return
-
-    const targetPlayer = room.players.find((p) => p.UUID === targetUUID)
-    if (!targetPlayer) return
-
-    const res = gameRepository.vote(game, player, targetPlayer)
-    if (!res) return
-
-    // 투표 처리 로직 (예: 투표 집계)
-    roomService.addSystemChatMessage(room.id, 'player_voted', {
-      voterName: player.name,
-    })
-  }
-
   guessWord(socket: WebSocket, word: string): void {
     const player = playerRepository.findBySocket(socket)
     if (!player || !player.roomId) return
@@ -331,7 +276,7 @@ class GameService {
     const isCorrect = normalizeString(word) === normalizeString(game.keyword)
     game.guessedWord = isCorrect
 
-    roomService.addSystemChatMessage(room.id, 'octopus_guessed', {
+    chatService.addSystemChatMessage(room.id, 'octopus_guessed', {
       name: player.name,
       word,
     })

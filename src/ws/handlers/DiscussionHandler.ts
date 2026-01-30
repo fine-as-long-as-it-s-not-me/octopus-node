@@ -1,5 +1,5 @@
 import { DECREASE_TIME_AMOUNT, INCREASE_TIME_AMOUNT } from '../../consts'
-import { gameService } from '../../services/GameService'
+import { discussionService } from '../../services/DiscussionService'
 import { SubTypeHandlerMap } from '../types'
 
 type DiscussionIncreaseTimeHandler = Record<string, never>
@@ -13,10 +13,10 @@ type DiscussionHandlerHandlerMap = {
 export const discussionHandlers: SubTypeHandlerMap<DiscussionHandlerHandlerMap> = {
   increase_time(socket, data: DiscussionIncreaseTimeHandler) {
     // 토론 시간 늘리기 요청
-    gameService.changeDiscussionTime(socket, INCREASE_TIME_AMOUNT)
+    discussionService.changeDiscussionTime(socket, INCREASE_TIME_AMOUNT)
   },
   decrease_time(socket, data: DiscussionDecreaseTimeHandler) {
     // 토론 시간 줄이기 요청
-    gameService.changeDiscussionTime(socket, DECREASE_TIME_AMOUNT)
+    discussionService.changeDiscussionTime(socket, DECREASE_TIME_AMOUNT)
   },
 }

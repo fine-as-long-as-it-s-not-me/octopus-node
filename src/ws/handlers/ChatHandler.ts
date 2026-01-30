@@ -1,4 +1,4 @@
-import { roomService } from '../../services/RoomService'
+import { chatService } from '../../services/ChatService'
 import { SubTypeHandlerMap } from '../types'
 
 type ChatSendHandler = {
@@ -13,6 +13,6 @@ export const chatHandlers: SubTypeHandlerMap<ChatHandlerHandlerMap> = {
   send(socket, data: ChatSendHandler) {
     // 채팅 보내기
     const { text } = data
-    roomService.addChatMessage(socket, text)
+    chatService.addChatMessage(socket, text)
   },
 }

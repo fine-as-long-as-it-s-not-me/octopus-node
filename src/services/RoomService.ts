@@ -7,6 +7,7 @@ import { DEFAULT_SETTING } from '../consts'
 import { playerService } from './PlayerService'
 import { ChangeableSettings } from '../data/types'
 import { sendSocketMessage } from '../lib/socket'
+import { chatService } from './ChatService'
 
 class RoomService {
   createRoom(socket: WebSocket, settings?: ChangeableSettings, code?: string) {
@@ -48,7 +49,7 @@ class RoomService {
       if (!roomRepository.addPlayer(room.id, player))
         throw new Error('Adding player to room failed')
 
-      roomService.addSystemChatMessage(room.id, 'player_joined', { name: player.name })
+      chatService.addSystemChatMessage(room.id, 'player_joined', { name: player.name })
       this.sendWelcomeMessage(room, player)
       this.updatePlayers(room.id)
       this.updateSettings(room.id)
@@ -76,7 +77,7 @@ class RoomService {
     player.roomId = null
     this.updatePlayers(room.id)
 
-    this.addSystemChatMessage(room.id, 'player_left', { name: player.name })
+    chatService.addSystemChatMessage(room.id, 'player_left', { name: player.name })
   }
 
   updatePlayers(roomId: number): void {
@@ -108,29 +109,6 @@ class RoomService {
 
   sendMessage(room: RoomData, type: string, data: any): void {
     for (const player of room.players) playerService.sendMessage(player.id, type, data)
-  }
-
-  addChatMessage(socket: WebSocket, text: string): void {
-    const player = playerRepository.findBySocket(socket)
-    if (!player || !player.roomId) return sendSocketMessage(socket, 'error')
-
-    const room = roomRepository.findById(player.roomId)
-    if (!room) return sendSocketMessage(socket, 'error')
-
-    this.sendMessage(room, 'chat_added', {
-      player: playerRepository.getResponseDTO(player.id),
-      text,
-    })
-  }
-
-  addSystemChatMessage(roomId: number, type: string, variable?: object): void {
-    const room = roomRepository.findById(roomId)
-    if (!room) return
-
-    this.sendMessage(room, 'system_chat', {
-      type,
-      variable,
-    })
   }
 }
 
