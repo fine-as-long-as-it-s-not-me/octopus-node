@@ -8,6 +8,7 @@ import { BaseRepository } from './BaseRepository'
 import { canvasRepository } from './CanvasRepository'
 import { playerRepository } from './PlayerRepository'
 import { roomRepository } from './RoomRepository'
+import { GameError } from '../errors'
 
 class GameRepository extends BaseRepository<GameData> {
   create(room: RoomData): GameData {
@@ -139,10 +140,10 @@ class GameRepository extends BaseRepository<GameData> {
 
   calculateScores(gameId: number) {
     const game = this.findById(gameId)
-    if (!game) throw new Error('Scores calculation failed : no game')
+    if (!game) throw new GameError('Scores calculation failed : no game')
 
     const room = roomRepository.findById(game.roomId)
-    if (!room) throw new Error('Scores calculation failed : no room')
+    if (!room) throw new GameError('Scores calculation failed : no room')
 
     room.players.forEach((player) => {
       let delta = 0

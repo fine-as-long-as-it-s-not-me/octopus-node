@@ -1,3 +1,5 @@
+import { RepositoryError } from '../errors'
+
 export abstract class BaseRepository<T> {
   protected tableName: string
   protected records: Map<number, T> = new Map()
@@ -39,7 +41,7 @@ export abstract class BaseRepository<T> {
     this.records.set(id, data as T)
     const res = this.records.get(id)
     if (res === undefined) {
-      throw new Error(`Failed to create record in ${this.tableName}`)
+      throw new RepositoryError(`Failed to create record in ${this.tableName}`)
     }
     return res
   }

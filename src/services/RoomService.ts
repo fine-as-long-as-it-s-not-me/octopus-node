@@ -7,6 +7,7 @@ import { DEFAULT_SETTING } from '../consts'
 import { playerService } from './PlayerService'
 import { ChangeableSettings } from '../data/types'
 import { sendSocketMessage } from '../lib/socket'
+import { RoomError } from '../errors'
 
 class RoomService {
   createRoom(socket: WebSocket, settings?: ChangeableSettings, code?: string) {
@@ -46,7 +47,7 @@ class RoomService {
       this.createRoom(socket, undefined, code)
     } else {
       if (!roomRepository.addPlayer(room.id, player))
-        throw new Error('Adding player to room failed')
+        throw new RoomError('Adding player to room failed')
 
       roomService.addSystemChatMessage(room.id, 'player_joined', { name: player.name })
       this.sendWelcomeMessage(room, player)
@@ -81,10 +82,10 @@ class RoomService {
 
   updatePlayers(roomId: number): void {
     const room = roomRepository.findById(roomId)
-    if (!room || !room.hostId) throw new Error('Updating players failed')
+    if (!room || !room.hostId) throw new RoomError('Updating players failed')
 
     const host = playerRepository.findById(room.hostId)
-    if (!host) throw new Error('Updating players failed : no host')
+    if (!host) throw new RoomError('Updating players failed : no host')
 
     this.sendMessage(room, 'players_updated', {
       hostUUID: host.UUID,
@@ -96,7 +97,7 @@ class RoomService {
 
   updateSettings(roomId: number): void {
     const room = roomRepository.findById(roomId)
-    if (!room) throw new Error('Updating settings failed')
+    if (!room) throw new RoomError('Updating settings failed')
     this.sendMessage(room, 'settings_updated', {
       settings: room.settings,
     })
