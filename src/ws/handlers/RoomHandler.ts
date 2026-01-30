@@ -63,6 +63,8 @@ export const roomHandlers: SubTypeHandlerMap<RoomHandlerRequestMap> = {
   },
   vote_keyword(socket, data: RoomVoteKeywordRequest) {
     // 커스텀 제시어 투표
+    const { keyword } = data
+    roomService.voteCustomWord(socket, keyword)
   },
   delete_keyword(socket, data: RoomDeleteKeywordRequest) {
     // 등록된 커스텀 제시어 제거

@@ -29,3 +29,7 @@ export const ROOM_UPDATE_FAILED_ERROR = new Error('Room update failed', {
 export const ONLY_HOST_CAN_CHANGE_SETTINGS_ERROR = new Error('Only the host can change settings', {
   cause: 'ONLY_HOST_CAN_CHANGE_SETTINGS',
 })
+
+export const CUSTOM_WORD_VOTE_CLOSED_ERROR = new Error('Custom word voting is closed', {
+  cause: 'CUSTOM_WORD_VOTE_CLOSED',
+})

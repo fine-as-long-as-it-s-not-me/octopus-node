@@ -32,6 +32,7 @@ export const errorHandlers = {
   },
   ONLY_HOST_CAN_CHANGE_SETTINGS: () => {
     console.error('Only the host can change settings.')
+    // send auth error to client
   },
   GAME_NOT_FOUND: () => {
     console.error('Game not found.')
