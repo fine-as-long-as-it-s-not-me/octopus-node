@@ -134,7 +134,7 @@ jobs:
               exit 1
             fi
 
-            echo "STEP 7: write rules.json safely (NO echo raw json)"
+            echo "STEP 7: write rules.json safely"
             jq -c --arg RN "$PROD_RULE_NAME" --arg BS "$TARGET_SET" '
               .data.rules
               | map(if .name == $RN then (.actions[0]["backend-set-name"] = $BS) else . end)
@@ -142,16 +142,22 @@ jobs:
 
             cat /tmp/rules.json | jq '.'
 
-            echo "STEP 8: routing-policy update (force) + capture work request"
-            WR_ID=$(oci lb routing-policy update \
+            echo "STEP 8: routing-policy update (force) + capture work request via jq"
+            UPDATE_OUT=$(oci lb routing-policy update \
               --load-balancer-id "$LB_OCID" \
               --routing-policy-name "$ROUTING_POLICY_NAME" \
               --rules file:///tmp/rules.json \
               --force \
               --auth "$OCI_AUTH" \
-              --region "$OCI_REGION" \
-              --query "opc-work-request-id" \
-              --raw-output)
+              --region "$OCI_REGION")
+
+            echo "$UPDATE_OUT"
+
+            WR_ID=$(echo "$UPDATE_OUT" | jq -r '."opc-work-request-id"')
+            if [ -z "$WR_ID" ] || [ "$WR_ID" = "null" ]; then
+              echo "ERROR: failed to capture work request id"
+              exit 1
+            fi
 
             echo "WORK_REQUEST_ID=$WR_ID"
 
@@ -161,7 +167,7 @@ jobs:
                 --work-request-id "$WR_ID" \
                 --auth "$OCI_AUTH" \
                 --region "$OCI_REGION" \
-                --query "data.lifecycle-state" \
+                --query 'data."lifecycle-state"' \
                 --raw-output)
 
               echo "WR_STATUS=$STATUS"
