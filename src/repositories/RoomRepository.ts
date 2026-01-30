@@ -1,6 +1,13 @@
 import { PlayerData } from '../data/PlayerData'
 import { RoomData } from '../data/RoomData'
 import { Language, Settings } from '../data/types'
+import {
+  ROOM_ADD_PLAYER_FAILED_ERROR,
+  ROOM_CODE_ALREADY_EXISTS_ERROR,
+  ROOM_CREATE_FAILED_ERROR,
+  ROOM_NOT_FOUND_ERROR,
+  ROOM_PLAYER_NOT_FOUND_ERROR,
+} from '../errors/room'
 import { BaseRepository } from './BaseRepository'
 
 class RoomRepository extends BaseRepository<RoomData> {
@@ -8,7 +15,7 @@ class RoomRepository extends BaseRepository<RoomData> {
     // Validate code uniqueness
     let code = roomCode
     if (code) {
-      if (this.findByCode(code)) throw new Error('Room code already exists')
+      if (this.findByCode(code)) throw ROOM_CODE_ALREADY_EXISTS_ERROR
     } else {
       code = RoomData.nextCode.toString()
       while (this.findByCode(code)) {
@@ -21,7 +28,7 @@ class RoomRepository extends BaseRepository<RoomData> {
     this.records.set(room.id, room)
 
     const res = this.findById(room.id)
-    if (!res) throw new Error('Failed to create room')
+    if (!res) throw ROOM_CREATE_FAILED_ERROR
 
     return res
   }
@@ -35,10 +42,10 @@ class RoomRepository extends BaseRepository<RoomData> {
 
   addPlayer(roomId: number, player: PlayerData): boolean {
     const room = this.findById(roomId)
-    if (!room) return false
+    if (!room) throw ROOM_NOT_FOUND_ERROR
 
     player.roomId = roomId
-    if (room.players.find((p) => p.id === player.id)) return false
+    if (room.players.find((p) => p.id === player.id)) throw ROOM_ADD_PLAYER_FAILED_ERROR
 
     room.players.push(player)
     if (room.players.length === 1) room.hostId = player.id
@@ -48,7 +55,7 @@ class RoomRepository extends BaseRepository<RoomData> {
 
   removePlayer(room: RoomData, playerId: number): void {
     const player = room.players.find((p) => p.id === playerId)
-    if (!player) throw new Error('Player not found in room')
+    if (!player) throw ROOM_PLAYER_NOT_FOUND_ERROR
 
     room.players = room.players.filter((p) => p.id !== playerId)
 

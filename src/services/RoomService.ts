@@ -8,13 +8,21 @@ import { playerService } from './PlayerService'
 import { ChangeableSettings } from '../data/types'
 import { sendSocketMessage } from '../lib/socket'
 import { chatService } from './ChatService'
+import {
+  ONLY_HOST_CAN_CHANGE_SETTINGS_ERROR,
+  ROOM_HOST_NOT_FOUND_ERROR,
+  ROOM_NOT_FOUND_ERROR,
+  ROOM_PLAYER_NOT_FOUND_ERROR,
+  ROOM_UPDATE_FAILED_ERROR,
+} from '../errors/room'
+import { PLAYER_NOT_IN_ROOM_ERROR, PLAYER_UNREGISTERED_ERROR } from '../errors/player'
 
 class RoomService {
   createRoom(socket: WebSocket, settings?: ChangeableSettings, code?: string) {
     const host = playerRepository.findBySocket(socket)
     if (!host) {
       sendSocketMessage(socket, 'unregistered')
-      return null
+      throw PLAYER_UNREGISTERED_ERROR
     }
 
     // 설정한 세팅과, 기본 세팅 조합해서 방 생성
@@ -28,10 +36,20 @@ class RoomService {
 
   changeSettings(socket: WebSocket, settings: ChangeableSettings): void {
     const player = playerRepository.findBySocket(socket)
-    if (!player || !player.roomId) return sendSocketMessage(socket, 'error')
+    if (!player || !player.roomId) {
+      sendSocketMessage(socket, 'error')
+      throw PLAYER_NOT_IN_ROOM_ERROR
+    }
 
     let room = roomRepository.findById(player.roomId)
-    if (!room || room.hostId !== player.id) return sendSocketMessage(socket, 'error')
+    if (!room) {
+      sendSocketMessage(socket, 'error')
+      throw ROOM_NOT_FOUND_ERROR
+    }
+    if (room.hostId !== player.id) {
+      sendSocketMessage(socket, 'error')
+      throw ONLY_HOST_CAN_CHANGE_SETTINGS_ERROR
+    }
 
     roomRepository.update(room.id, { settings: { ...room.settings, ...settings } })
     this.updateSettings(room.id)
@@ -40,14 +58,16 @@ class RoomService {
   // 플레이어 추가
   join(code: string, socket: WebSocket, UUID: string): void {
     let player = playerRepository.findByUUID(UUID)
-    if (!player) return sendSocketMessage(socket, 'unregistered')
+    if (!player) {
+      sendSocketMessage(socket, 'unregistered')
+      throw PLAYER_UNREGISTERED_ERROR
+    }
 
     const room = roomRepository.findByCode(code)
     if (!room) {
       this.createRoom(socket, undefined, code)
     } else {
-      if (!roomRepository.addPlayer(room.id, player))
-        throw new Error('Adding player to room failed')
+      roomRepository.addPlayer(room.id, player)
 
       chatService.addSystemChatMessage(room.id, 'player_joined', { name: player.name })
       this.sendWelcomeMessage(room, player)
@@ -58,7 +78,10 @@ class RoomService {
 
   joinRandom(socket: WebSocket, UUID: string): void {
     let player = playerRepository.findByUUID(UUID)
-    if (!player) return sendSocketMessage(socket, 'unregistered')
+    if (!player) {
+      sendSocketMessage(socket, 'unregistered')
+      throw PLAYER_UNREGISTERED_ERROR
+    }
 
     let room = roomRepository.getRandomRoom(player.lang)
     if (room && room.code) this.join(room.code, socket, UUID)
@@ -68,10 +91,10 @@ class RoomService {
   // 대기방 나가기
   leave(roomCode: string, socket: WebSocket): void {
     const room = roomRepository.findByCode(roomCode)
-    if (!room) return
+    if (!room) throw ROOM_NOT_FOUND_ERROR
 
     const player = room.players.find((p) => p.socket === socket)
-    if (!player) return
+    if (!player) throw ROOM_PLAYER_NOT_FOUND_ERROR
 
     roomRepository.removePlayer(room, player.id)
     player.roomId = null
@@ -82,10 +105,10 @@ class RoomService {
 
   updatePlayers(roomId: number): void {
     const room = roomRepository.findById(roomId)
-    if (!room || !room.hostId) throw new Error('Updating players failed')
+    if (!room || !room.hostId) throw ROOM_UPDATE_FAILED_ERROR
 
     const host = playerRepository.findById(room.hostId)
-    if (!host) throw new Error('Updating players failed : no host')
+    if (!host) throw ROOM_HOST_NOT_FOUND_ERROR
 
     this.sendMessage(room, 'players_updated', {
       hostUUID: host.UUID,
@@ -97,7 +120,7 @@ class RoomService {
 
   updateSettings(roomId: number): void {
     const room = roomRepository.findById(roomId)
-    if (!room) throw new Error('Updating settings failed')
+    if (!room) throw ROOM_NOT_FOUND_ERROR
     this.sendMessage(room, 'settings_updated', {
       settings: room.settings,
     })

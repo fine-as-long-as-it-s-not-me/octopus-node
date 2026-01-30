@@ -11,6 +11,14 @@ import { canvasRepository } from '../repositories/CanvasRepository'
 import { getPhaseDuration } from '../lib/game'
 import { normalizeString } from '../lib/string'
 import { chatService } from './ChatService'
+import {
+  GAME_ALREADY_IN_PROGRESS_ERROR,
+  GAME_CREATE_FAILED_ERROR,
+  GAME_NOT_FOUND_ERROR,
+  ONLY_HOST_CAN_START_GAME_ERROR,
+} from '../errors/game'
+import { PLAYER_NOT_FOUND_ERROR, PLAYER_NOT_IN_ROOM_ERROR } from '../errors/player'
+import { ROOM_NOT_FOUND_ERROR } from '../errors/room'
 
 class GameService {
   phaseStarters: Record<Phase, (game: GameData, timeLeft: number) => void> = {
@@ -28,17 +36,17 @@ class GameService {
 
   startGame(socket: WebSocket): void {
     const player = playerRepository.findBySocket(socket)
-    if (!player || !player.roomId)
-      throw new Error('Player not found or not in a room', { cause: 'PLAYER_NOT_IN_ROOM' })
+    if (!player) throw PLAYER_NOT_FOUND_ERROR
+    if (!player.roomId) throw PLAYER_NOT_IN_ROOM_ERROR
 
     const room = roomRepository.findById(player.roomId)
-    if (!room) throw new Error('Room not found')
+    if (!room) throw ROOM_NOT_FOUND_ERROR
 
-    if (room.hostId !== player.id) throw new Error('Only the host can start the game')
-    if (room.game) throw new Error('Game already in progress in this room')
+    if (room.hostId !== player.id) throw ONLY_HOST_CAN_START_GAME_ERROR
+    if (room.game) throw GAME_ALREADY_IN_PROGRESS_ERROR
 
     const game = gameRepository.create(room)
-    if (!game) throw new Error('Failed to create game')
+    if (!game) throw GAME_CREATE_FAILED_ERROR
 
     // broadcast game started message
     roomService.sendMessage(room, 'game_started', {})
@@ -262,13 +270,14 @@ class GameService {
 
   guessWord(socket: WebSocket, word: string): void {
     const player = playerRepository.findBySocket(socket)
-    if (!player || !player.roomId) return
+    if (!player) throw PLAYER_NOT_FOUND_ERROR
+    if (!player.roomId) throw PLAYER_NOT_IN_ROOM_ERROR
 
     const room = roomRepository.findById(player.roomId)
-    if (!room) return
+    if (!room) throw ROOM_NOT_FOUND_ERROR
 
     const game = room.game
-    if (!game) return
+    if (!game) throw GAME_NOT_FOUND_ERROR
 
     if (game.phase !== Phase.GUESSING) return
 

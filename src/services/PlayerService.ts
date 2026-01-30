@@ -2,11 +2,15 @@ import { WebSocket } from 'ws'
 import { playerRepository } from '../repositories/PlayerRepository'
 import { Language } from '../data/types'
 import { sendSocketMessage } from '../lib/socket'
+import { PLAYER_UNREGISTERED_ERROR } from '../errors/player'
 
 class PlayerService {
   changeLanguage(socket: WebSocket, lang: Language): void {
     const player = playerRepository.findBySocket(socket)
-    if (!player) return sendSocketMessage(socket, 'unregistered')
+    if (!player) {
+      sendSocketMessage(socket, 'unregistered')
+      throw PLAYER_UNREGISTERED_ERROR
+    }
 
     player.lang = lang
     this.sendMessage(player.id, 'language_changed', { lang }) // no use in client

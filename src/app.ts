@@ -24,7 +24,8 @@ wss.on('connection', (socket) => {
       console.error('Error handling message:', error)
       if (error instanceof Error) {
         const cause = (error.cause as keyof typeof errorHandlers) || 'INTERNAL_ERROR'
-        errorHandlers[cause]()
+        const handler = errorHandlers[cause] ?? errorHandlers.INTERNAL_ERROR
+        handler()
       }
     }
   })

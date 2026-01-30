@@ -6,17 +6,20 @@ import { playerService } from './PlayerService'
 import { gameRepository } from '../repositories/GameRepository'
 import { chatService } from './ChatService'
 import { gameService } from './GameService'
+import { GAME_NOT_FOUND_ERROR } from '../errors/game'
+import { PLAYER_NOT_FOUND_ERROR, PLAYER_NOT_IN_ROOM_ERROR } from '../errors/player'
+import { ROOM_NOT_FOUND_ERROR } from '../errors/room'
 
 class DiscussionService {
   changeDiscussionTime(socket: WebSocket, amount: number): void {
     const player = playerRepository.findBySocket(socket)
-    if (!player) return
+    if (!player) throw PLAYER_NOT_FOUND_ERROR
     const roomId = player.roomId
-    if (!roomId) return
+    if (!roomId) throw PLAYER_NOT_IN_ROOM_ERROR
     const room = roomRepository.findById(roomId)
-    if (!room) return
+    if (!room) throw ROOM_NOT_FOUND_ERROR
     const game = room.game
-    if (!game) return
+    if (!game) throw GAME_NOT_FOUND_ERROR
 
     if (game.phase !== Phase.DISCUSSION) return
 

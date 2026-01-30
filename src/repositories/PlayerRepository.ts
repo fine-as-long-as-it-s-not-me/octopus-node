@@ -53,7 +53,13 @@ class PlayerRepository extends BaseRepository<PlayerData> {
 
     if (player.roomId) {
       const room = roomRepository.findById(player.roomId)
-      if (room) roomRepository.removePlayer(room, player.id)
+      if (room) {
+        try {
+          roomRepository.removePlayer(room, player.id)
+        } catch (error) {
+          console.error('Failed to remove player from room during logout:', error)
+        }
+      }
     }
   }
 
