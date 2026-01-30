@@ -8,7 +8,11 @@ export function sendSocketMessage(
 ): void {
   // Check if socket is in a state that can send messages
   if (socket.readyState !== WebSocket.OPEN) {
-    console.warn(`Cannot send message: socket not open (readyState: ${socket.readyState})`)
+    const err = new Error(`Cannot send message: socket not open (readyState: ${socket.readyState})`)
+    console.warn(err.message)
+    if (cb) {
+      cb(err)
+    }
     return
   }
 
