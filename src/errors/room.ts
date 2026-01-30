@@ -33,3 +33,11 @@ export const ONLY_HOST_CAN_CHANGE_SETTINGS_ERROR = new Error('Only the host can 
 export const CUSTOM_WORD_VOTE_CLOSED_ERROR = new Error('Custom word voting is closed', {
   cause: 'CUSTOM_WORD_VOTE_CLOSED',
 })
+
+export const INVALID_KEYWORD_EMPTY_ERROR = new Error('Keyword cannot be empty or only whitespace', {
+  cause: 'INVALID_KEYWORD_EMPTY',
+})
+
+export const INVALID_KEYWORD_TOO_LONG_ERROR = new Error('Keyword exceeds maximum length', {
+  cause: 'INVALID_KEYWORD_TOO_LONG',
+})
