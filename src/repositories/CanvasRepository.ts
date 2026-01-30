@@ -1,4 +1,5 @@
 import { CanvasData } from '../data/CanvasData'
+import { CANVAS_CREATE_FAILED_ERROR } from '../errors/canvas'
 import { BaseRepository } from './BaseRepository'
 
 class CanvasRepository extends BaseRepository<CanvasData> {
@@ -7,7 +8,7 @@ class CanvasRepository extends BaseRepository<CanvasData> {
     this.records.set(canvas.id, canvas)
     const res = this.records.get(canvas.id)
     if (res === undefined) {
-      throw new Error(`Failed to create record in ${this.tableName}`)
+      throw CANVAS_CREATE_FAILED_ERROR
     }
     return res
   }

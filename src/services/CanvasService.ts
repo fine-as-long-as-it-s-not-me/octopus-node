@@ -6,52 +6,57 @@ import { playerRepository } from '../repositories/PlayerRepository'
 import { roomRepository } from '../repositories/RoomRepository'
 import { RoomData } from '../data/RoomData'
 import { roomService } from './RoomService'
+import { CANVAS_NOT_ALLOWED_ERROR, CANVAS_NOT_FOUND_ERROR } from '../errors/canvas'
+import { GAME_NOT_FOUND_ERROR } from '../errors/game'
+import { PLAYER_NOT_FOUND_ERROR, PLAYER_NOT_IN_ROOM_ERROR } from '../errors/player'
+import { ROOM_NOT_FOUND_ERROR } from '../errors/room'
 
 class CanvasService {
   addStroke(socket: WebSocket, stroke: Stroke): void {
     const player = playerRepository.findBySocket(socket)
-    if (!player) return
+    if (!player) throw PLAYER_NOT_FOUND_ERROR
 
     const roomId = player.roomId
-    if (!roomId) return
+    if (!roomId) throw PLAYER_NOT_IN_ROOM_ERROR
 
     const room = roomRepository.findById(roomId)
-    if (!room) return
+    if (!room) throw ROOM_NOT_FOUND_ERROR
 
     const game = room.game
-    if (!game || game.painterId !== player.id) return console.log('Not allowed to draw')
+    if (!game) throw GAME_NOT_FOUND_ERROR
+    if (game.painterId !== player.id) throw CANVAS_NOT_ALLOWED_ERROR
 
-    if (!game.canvasId) return console.log('Canvas ID not found in game')
+    if (!game.canvasId) throw CANVAS_NOT_FOUND_ERROR
 
     const canvas = canvasRepository.findById(game.canvasId)
-    if (!canvas) return console.log('Canvas not found')
+    if (!canvas) throw CANVAS_NOT_FOUND_ERROR
 
     canvasRepository.update(canvas.id, { ...canvas, strokes: [...canvas.strokes, stroke] })
     const updatedCanvas = canvasRepository.findById(canvas.id)
-    if (!updatedCanvas) return console.log('Canvas not found after update')
+    if (!updatedCanvas) throw CANVAS_NOT_FOUND_ERROR
     this.updateCanvas(room, updatedCanvas)
   }
 
   changeBackground(socket: WebSocket, color: string): void {
     const player = playerRepository.findBySocket(socket)
-    if (!player) return
+    if (!player) throw PLAYER_NOT_FOUND_ERROR
 
     const roomId = player.roomId
-    if (!roomId) return
+    if (!roomId) throw PLAYER_NOT_IN_ROOM_ERROR
 
     const room = roomRepository.findById(roomId)
-    if (!room) return
+    if (!room) throw ROOM_NOT_FOUND_ERROR
 
     const game = room.game
-    if (!game || game.painterId !== player.id)
-      return console.log('Not allowed to change background')
+    if (!game) throw GAME_NOT_FOUND_ERROR
+    if (game.painterId !== player.id) throw CANVAS_NOT_ALLOWED_ERROR
 
-    if (!game.canvasId) return console.log('Canvas ID not found in game')
+    if (!game.canvasId) throw CANVAS_NOT_FOUND_ERROR
 
     canvasRepository.update(game.canvasId, { bgColor: color })
 
     const canvas = canvasRepository.findById(game.canvasId)
-    if (!canvas) return console.log('Canvas not found')
+    if (!canvas) throw CANVAS_NOT_FOUND_ERROR
     this.updateCanvas(room, canvas)
   }
 

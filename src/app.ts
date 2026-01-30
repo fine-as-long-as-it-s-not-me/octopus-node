@@ -1,7 +1,7 @@
 import express from 'express'
 import http from 'http'
 import { WebSocketServer } from 'ws'
-import { handlers } from './ws'
+import { errorHandlers, handlers } from './ws'
 
 const app = express()
 const server = http.createServer(app)
@@ -19,13 +19,14 @@ wss.on('connection', (socket) => {
     try {
       const { mainType, subType, data } = JSON.parse(rawMessage.toString())
 
-      console.log(
-        `Received message: mainType=${mainType}, subType=${subType}, data=${JSON.stringify(data)}`,
-      )
-
       handlers[mainType][subType](socket, data)
     } catch (error) {
       console.error('Error handling message:', error)
+      if (error instanceof Error) {
+        const cause = (error.cause as keyof typeof errorHandlers) || 'INTERNAL_ERROR'
+        const handler = errorHandlers[cause] ?? errorHandlers.INTERNAL_ERROR
+        handler()
+      }
     }
   })
 })
