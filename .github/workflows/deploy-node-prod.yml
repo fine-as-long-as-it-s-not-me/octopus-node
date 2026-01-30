@@ -32,7 +32,7 @@ jobs:
     needs: build-and-push
     runs-on: ubuntu-latest
     steps:
-      - name: Blue-Green Switch via OCI Routing Policy (debug enabled)
+      - name: Blue-Green Switch via OCI Routing Policy (debug + wait work request)
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.OCI_HOST }}
@@ -72,10 +72,14 @@ jobs:
               --region "$OCI_REGION")
 
             echo "STEP 2: determine current backend set"
-            CURRENT_SET=$(echo "$CUR_JSON" | jq -r --arg RN "$PROD_RULE_NAME" '.data.rules[] | select(.name==$RN) | .actions[0]["backend-set-name"]')
+            CURRENT_SET=$(echo "$CUR_JSON" | jq -r --arg RN "$PROD_RULE_NAME" '
+              .data.rules[]
+              | select(.name==$RN)
+              | .actions[0]["backend-set-name"]
+            ')
 
             if [ -z "$CURRENT_SET" ] || [ "$CURRENT_SET" = "null" ]; then
-              echo "ERROR: rule '$PROD_RULE_NAME' not found in routing policy '$ROUTING_POLICY_NAME'"
+              echo "ERROR: cannot read current backend set for rule '$PROD_RULE_NAME'"
               echo "$CUR_JSON" | jq -r '.data.rules[]?.name' || true
               exit 1
             fi
@@ -130,25 +134,47 @@ jobs:
               exit 1
             fi
 
-            echo "STEP 7: build updated rules"
-            UPDATED_RULES=$(echo "$CUR_JSON" | jq --arg RN "$PROD_RULE_NAME" --arg BS "$TARGET_SET" '
+            echo "STEP 7: write rules.json safely (NO echo raw json)"
+            jq -c --arg RN "$PROD_RULE_NAME" --arg BS "$TARGET_SET" '
               .data.rules
               | map(if .name == $RN then (.actions[0]["backend-set-name"] = $BS) else . end)
-            ')
+            ' <<<"$CUR_JSON" > /tmp/rules.json
 
-            echo "$UPDATED_RULES" | jq -e 'type=="array"' >/dev/null 2>&1
+            cat /tmp/rules.json | jq '.'
 
-            echo "$UPDATED_RULES" > /tmp/rules.json
-            cat /tmp/rules.json
-
-            echo "STEP 8: routing-policy update (force)"
-            oci lb routing-policy update \
+            echo "STEP 8: routing-policy update (force) + capture work request"
+            WR_ID=$(oci lb routing-policy update \
               --load-balancer-id "$LB_OCID" \
               --routing-policy-name "$ROUTING_POLICY_NAME" \
               --rules file:///tmp/rules.json \
               --force \
               --auth "$OCI_AUTH" \
-              --region "$OCI_REGION"
+              --region "$OCI_REGION" \
+              --query "opc-work-request-id" \
+              --raw-output)
+
+            echo "WORK_REQUEST_ID=$WR_ID"
+
+            echo "STEP 8-1: wait work request SUCCEEDED"
+            for i in {1..120}; do
+              STATUS=$(oci lb work-request get \
+                --work-request-id "$WR_ID" \
+                --auth "$OCI_AUTH" \
+                --region "$OCI_REGION" \
+                --query "data.lifecycle-state" \
+                --raw-output)
+
+              echo "WR_STATUS=$STATUS"
+              if [ "$STATUS" = "SUCCEEDED" ]; then
+                break
+              fi
+              if [ "$STATUS" = "FAILED" ]; then
+                echo "ERROR: work request failed"
+                oci lb work-request get --work-request-id "$WR_ID" --auth "$OCI_AUTH" --region "$OCI_REGION" || true
+                exit 1
+              fi
+              sleep 5
+            done
 
             echo "STEP 9: verify routing policy switched"
             NEW_JSON=$(oci lb routing-policy get \
@@ -157,11 +183,15 @@ jobs:
               --auth "$OCI_AUTH" \
               --region "$OCI_REGION")
 
-            NEW_SET=$(echo "$NEW_JSON" | jq -r --arg RN "$PROD_RULE_NAME" '.data.rules[] | select(.name==$RN) | .actions[0].backendSetName')
-            echo "NEW_SET=$NEW_SET (expected $TARGET_SET)"
+            NEW_SET=$(echo "$NEW_JSON" | jq -r --arg RN "$PROD_RULE_NAME" '
+              .data.rules[]
+              | select(.name==$RN)
+              | .actions[0]["backend-set-name"]
+            ')
 
+            echo "NEW_SET=$NEW_SET (expected $TARGET_SET)"
             if [ "$NEW_SET" != "$TARGET_SET" ]; then
-              echo "ERROR: routing policy not updated yet (or failed)."
+              echo "ERROR: routing policy not updated to target set"
               exit 1
             fi
 
