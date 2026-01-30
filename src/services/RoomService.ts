@@ -5,9 +5,10 @@ import { playerRepository } from '../repositories/PlayerRepository'
 import { roomRepository } from '../repositories/RoomRepository'
 import { DEFAULT_SETTING } from '../consts'
 import { playerService } from './PlayerService'
-import { ChangeableSettings } from '../data/types'
+import { ChangeableSettings, Phase } from '../data/types'
 import { chatService } from './ChatService'
 import {
+  CUSTOM_WORD_VOTE_CLOSED_ERROR,
   ONLY_HOST_CAN_CHANGE_SETTINGS_ERROR,
   ROOM_HOST_NOT_FOUND_ERROR,
   ROOM_NOT_FOUND_ERROR,
@@ -109,12 +110,39 @@ class RoomService {
     })
   }
 
+  updateCustomWords(roomId: number): void {
+    const room = roomRepository.findById(roomId)
+    if (!room) throw ROOM_NOT_FOUND_ERROR
+
+    const roomCustomWords = roomRepository.getRegisteredCustomWords(roomId)
+    this.sendMessage(room, 'custom_words_updated', {
+      customWords: roomCustomWords,
+    })
+  }
+
   sendWelcomeMessage(room: RoomData, player: PlayerData): void {
-    playerService.sendMessage(player.id, 'welcome', { roomCode: room.code })
+    playerService.sendMessage(player.id, 'welcome', {
+      roomCode: room.code,
+      phase: room.game?.phase ?? Phase.END,
+    })
   }
 
   sendMessage(room: RoomData, type: string, data: any): void {
     for (const player of room.players) playerService.sendMessage(player.id, type, data)
+  }
+
+  voteCustomWord(socket: WebSocket, keyword: string): void {
+    const player = playerRepository.findBySocket(socket)
+    if (!player) throw PLAYER_UNREGISTERED_ERROR
+    if (!player.roomId) throw PLAYER_NOT_IN_ROOM_ERROR
+
+    const room = roomRepository.findById(player.roomId)
+    if (!room) throw ROOM_NOT_FOUND_ERROR
+    if (!room.settings.isCustomWordVoteOpen) throw CUSTOM_WORD_VOTE_CLOSED_ERROR
+
+    roomRepository.voteCustomWord(room.id, keyword)
+
+    this.updateCustomWords(room.id)
   }
 }
 

@@ -214,11 +214,12 @@ class GameService {
       }
     }
 
+    let votedPlayer = null
+    if (game.topVotedUUID) votedPlayer = playerRepository.findByUUID(game.topVotedUUID)
+
     roomService.sendMessage(room, 'vote_result', {
       voteResult: Array.from(voteResult.entries()),
-      votedPlayer: playerRepository.getResponseDTO(
-        playerRepository.findByUUID(game.topVotedUUID!)!.id,
-      ),
+      votedPlayer: votedPlayer ? playerRepository.getResponseDTO(votedPlayer.id) : null,
       octopuses: game.octopuses.map((id) => {
         const player = playerRepository.findByUUID(id)
         if (!player) return null
@@ -232,10 +233,9 @@ class GameService {
   startRoundResultPhase(game: GameData): void {
     // 점수 집계 단계
     const room = roomRepository.findById(game.roomId)
-    if (!room) return
+    if (!room) throw ROOM_NOT_FOUND_ERROR
 
-    const scores = gameRepository.calculateScores(game.id)
-    if (!scores) return
+    gameRepository.calculateScores(game.id)
 
     const ranks = gameRepository.getRanks(game.id)
 
@@ -250,7 +250,7 @@ class GameService {
   startGameResultPhase(game: GameData): void {
     // 결과 발표 단계
     const room = roomRepository.findById(game.roomId)
-    if (!room) return
+    if (!room) throw ROOM_NOT_FOUND_ERROR
 
     const ranks = gameRepository.getRanks(game.id)
 
@@ -283,15 +283,19 @@ class GameService {
 
     if (!game.octopuses.includes(player.UUID)) return
 
+    console.log(word, game.keyword)
+
     const isCorrect = normalizeString(word) === normalizeString(game.keyword)
     game.guessedWord = isCorrect
+    game.winningTeam = isCorrect ? Team.OCTOPUS : Team.SQUID
 
     chatService.addSystemChatMessage(room.id, 'octopus_guessed', {
       name: player.name,
       word,
     })
 
-    gameRepository.updatePhase(game.id, Phase.ROUND_RESULT)
+    const timeLeft = gameRepository.updatePhase(game.id, Phase.ROUND_RESULT)
+    this.phaseStarters[game.phase](game, timeLeft)
   }
 }
 

@@ -19,6 +19,12 @@ class PlayerRepository extends BaseRepository<PlayerData> {
     return player
   }
 
+  initRound(player: PlayerData): void {
+    player.hasIncreasedDiscussionTime = false
+    player.hasDecreasedDiscussionTime = false
+    player.votedPlayerUUID = null
+  }
+
   getHeartbeatInterval(socket: WebSocket) {
     return setInterval(() => {
       sendSocketMessage(socket, 'player', 'heartbeat', (err) => {
@@ -93,12 +99,6 @@ class PlayerRepository extends BaseRepository<PlayerData> {
       name: player.name,
       roomCode: room ? room.code : null,
     }
-  }
-
-  initRound(player: PlayerData): void {
-    player.hasIncreasedDiscussionTime = false
-    player.hasDecreasedDiscussionTime = false
-    player.votedPlayerUUID = null
   }
 }
 

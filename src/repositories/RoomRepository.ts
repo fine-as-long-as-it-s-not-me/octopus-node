@@ -71,6 +71,24 @@ class RoomRepository extends BaseRepository<RoomData> {
     const randomIndex = Math.floor(Math.random() * publicRooms.length)
     return publicRooms[randomIndex]
   }
+
+  getRegisteredCustomWords(roomId: number): [string, number][] {
+    const room = this.findById(roomId)
+    if (!room) throw ROOM_NOT_FOUND_ERROR
+
+    return Array.from(room.customWords.entries()).sort((a, b) => b[1] - a[1])
+  }
+
+  voteCustomWord(roomId: number, keyword: string): void {
+    const room = this.findById(roomId)
+    if (!room) throw ROOM_NOT_FOUND_ERROR
+
+    if (!room.customWords.has(keyword)) {
+      room.customWords.set(keyword, 0)
+    }
+    const currentVotes = room.customWords.get(keyword) || 0
+    room.customWords.set(keyword, currentVotes + 1)
+  }
 }
 
 const roomRepository = new RoomRepository('rooms')
