@@ -8,6 +8,7 @@ import { chatHandlers } from './handlers/ChatHandler'
 import { gameHandlers } from './handlers/GameHandler'
 import { roomHandlers } from './handlers/RoomHandler'
 import { playerHandlers } from './handlers/PlayerHandler'
+import { errorHandlers } from './errorHandler'
 
 export const handlers: MainTypeHandlerMap = {
   vote: voteHandlers,
@@ -19,3 +20,5 @@ export const handlers: MainTypeHandlerMap = {
   room: roomHandlers,
   player: playerHandlers,
 }
+
+export { errorHandlers }

@@ -20,10 +20,7 @@ export interface Settings {
   lang: Language
 }
 
-export type ChangeableSettings = Omit<
-  Settings,
-  'lang' | 'isCustomWordVoteOpen' | 'customWordMinVotes' | 'octopusAmount'
->
+export type ChangeableSettings = Omit<Settings, 'lang' | 'octopusAmount'>
 
 export interface Stroke {
   id: string

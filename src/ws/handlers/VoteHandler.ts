@@ -1,4 +1,4 @@
-import { gameService } from '../../services/GameService'
+import { voteService } from '../../services/VoteService'
 import { SubTypeHandlerMap } from '../types'
 
 type VoteCastHandler = {
@@ -13,6 +13,6 @@ export const voteHandlers: SubTypeHandlerMap<VoteHandlerHandlerMap> = {
   cast(socket, data: VoteCastHandler) {
     // 유저가 투표
     const { targetUUID } = data
-    gameService.vote(socket, targetUUID)
+    voteService.vote(socket, targetUUID)
   },
 }

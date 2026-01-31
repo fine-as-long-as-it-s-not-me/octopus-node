@@ -19,6 +19,12 @@ class PlayerRepository extends BaseRepository<PlayerData> {
     return player
   }
 
+  initRound(player: PlayerData): void {
+    player.hasIncreasedDiscussionTime = false
+    player.hasDecreasedDiscussionTime = false
+    player.votedPlayerUUID = null
+  }
+
   getHeartbeatInterval(socket: WebSocket) {
     return setInterval(() => {
       sendSocketMessage(socket, 'player', 'heartbeat', (err) => {
@@ -53,7 +59,13 @@ class PlayerRepository extends BaseRepository<PlayerData> {
 
     if (player.roomId) {
       const room = roomRepository.findById(player.roomId)
-      if (room) roomRepository.removePlayer(room, player.id)
+      if (room) {
+        try {
+          roomRepository.removePlayer(room, player.id)
+        } catch (error) {
+          console.error('Failed to remove player from room during logout:', error)
+        }
+      }
     }
   }
 
@@ -87,12 +99,6 @@ class PlayerRepository extends BaseRepository<PlayerData> {
       name: player.name,
       roomCode: room ? room.code : null,
     }
-  }
-
-  initRound(player: PlayerData): void {
-    player.hasIncreasedDiscussionTime = false
-    player.hasDecreasedDiscussionTime = false
-    player.votedPlayerUUID = null
   }
 }
 
