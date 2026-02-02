@@ -69,9 +69,10 @@ class RoomRepository extends BaseRepository<RoomData> {
     room.players = room.players.filter((p) => p.id !== playerId)
 
     if (room.players.length === 0) this.delete(room.id)
-    else if (room.hostId === playerId) room.hostId = room.players[0].id
-
-    this.updateOctopusAmount(room.id)
+    else {
+      if (room.hostId === playerId) room.hostId = room.players[0].id
+      this.updateOctopusAmount(room.id)
+    }
   }
 
   getRandomRoom(lang: Language): RoomData | undefined {
