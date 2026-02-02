@@ -116,8 +116,14 @@ class RoomService {
     if (!room) throw ROOM_NOT_FOUND_ERROR
 
     const roomCustomWords = roomRepository.getRegisteredCustomWords(roomId)
+    const serializedCustomWords = roomCustomWords
+      .map(([keyword, voters]) => ({
+        keyword,
+        voteCount: voters.size,
+      }))
+      .sort((a, b) => b.voteCount - a.voteCount)
     this.sendMessage(room, 'custom_words_updated', {
-      customWords: roomCustomWords,
+      customWords: serializedCustomWords,
     })
   }
 
@@ -141,7 +147,26 @@ class RoomService {
     if (!room) throw ROOM_NOT_FOUND_ERROR
     if (!room.settings.isCustomWordVoteOpen) throw CUSTOM_WORD_VOTE_CLOSED_ERROR
 
-    roomRepository.voteCustomWord(room.id, keyword)
+    if (roomRepository.hasPlayerVotedCustomWord(room.id, keyword, player.UUID)) {
+      playerService.sendMessage(player.id, 'error', {
+        message: 'You have already voted for this word.',
+      })
+    }
+
+    roomRepository.voteCustomWord(room.id, keyword, player.UUID)
+
+    this.updateCustomWords(room.id)
+  }
+
+  deleteCustomWord(socket: WebSocket, keyword: string): void {
+    const player = playerRepository.findBySocket(socket)
+    if (!player) throw PLAYER_UNREGISTERED_ERROR
+    if (!player.roomId) throw PLAYER_NOT_IN_ROOM_ERROR
+
+    const room = roomRepository.findById(player.roomId)
+    if (!room) throw ROOM_NOT_FOUND_ERROR
+
+    roomRepository.deleteCustomWord(room.id, keyword)
 
     this.updateCustomWords(room.id)
   }

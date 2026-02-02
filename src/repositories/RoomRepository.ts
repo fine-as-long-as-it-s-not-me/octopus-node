@@ -84,22 +84,40 @@ class RoomRepository extends BaseRepository<RoomData> {
     return publicRooms[randomIndex]
   }
 
-  getRegisteredCustomWords(roomId: number): [string, number][] {
+  getRegisteredCustomWords(roomId: number): [string, Set<string>][] {
     const room = this.findById(roomId)
     if (!room) throw ROOM_NOT_FOUND_ERROR
 
-    return Array.from(room.customWords.entries()).sort((a, b) => b[1] - a[1])
+    return Array.from(room.customWords.entries())
   }
 
-  voteCustomWord(roomId: number, keyword: string): void {
+  voteCustomWord(roomId: number, keyword: string, playerUUID: string): void {
     const room = this.findById(roomId)
     if (!room) throw ROOM_NOT_FOUND_ERROR
 
     if (!room.customWords.has(keyword)) {
-      room.customWords.set(keyword, 0)
+      room.customWords.set(keyword, new Set())
     }
-    const currentVotes = room.customWords.get(keyword) || 0
-    room.customWords.set(keyword, currentVotes + 1)
+    const currentVotes = room.customWords.get(keyword) || new Set()
+    currentVotes.add(playerUUID)
+    room.customWords.set(keyword, currentVotes)
+  }
+
+  deleteCustomWord(roomId: number, keyword: string): void {
+    const room = this.findById(roomId)
+    if (!room) throw ROOM_NOT_FOUND_ERROR
+
+    room.customWords.delete(keyword)
+  }
+
+  hasPlayerVotedCustomWord(roomId: number, keyword: string, playerUUID: string): boolean {
+    const room = this.findById(roomId)
+    if (!room) throw ROOM_NOT_FOUND_ERROR
+
+    const voters = room.customWords.get(keyword)
+    if (!voters) return false
+
+    return voters.has(playerUUID)
   }
 }
 
