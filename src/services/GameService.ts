@@ -126,9 +126,11 @@ class GameService {
     const room = roomRepository.findById(game.roomId)
     if (!room) return
 
+    const isFoolMode = room.settings.isFoolMode
+
     room.players.forEach((player) => {
       const isOctopus = game.octopuses.some((octopusUUID) => octopusUUID === player.UUID)
-      const wordToShow = isOctopus ? game.fakeWord : game.keyword
+      const wordToShow = isOctopus ? (isFoolMode ? game.fakeWord : '') : game.keyword
 
       playerService.sendMessage(player.id, 'keyword', {
         keyword: wordToShow,
@@ -183,6 +185,7 @@ class GameService {
       if (count > topVote) {
         topVote = count
         topVotes = [UUID]
+        if (count >= room.players.length - game.octopuses.length) game.isUnanimity = true
       } else if (count === topVote) {
         topVotes.push(UUID)
       }
@@ -198,7 +201,7 @@ class GameService {
       } else {
         // 라이어를 못 맞춘 경우
         game.foundOctopus = false
-        game.winningTeam = Team.SQUID
+        game.winningTeam = Team.OCTOPUS
       }
     } else {
       // 동점인 경우
@@ -228,7 +231,9 @@ class GameService {
     })
   }
 
-  startGuessingPhase(game: GameData): void {}
+  startGuessingPhase(game: GameData): void {
+    game.winningTeam = Team.SQUID
+  }
 
   startRoundResultPhase(game: GameData): void {
     // 점수 집계 단계
@@ -244,6 +249,7 @@ class GameService {
       tied: game.didVoteTie,
       guessed: game.guessedWord,
       isUnanimity: game.isUnanimity,
+      winningTeam: game.winningTeam,
     })
   }
 
@@ -282,8 +288,6 @@ class GameService {
     if (game.phase !== Phase.GUESSING) return
 
     if (!game.octopuses.includes(player.UUID)) return
-
-    console.log(word, game.keyword)
 
     const isCorrect = normalizeString(word) === normalizeString(game.keyword)
     game.guessedWord = isCorrect
