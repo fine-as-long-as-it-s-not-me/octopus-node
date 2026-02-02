@@ -18,6 +18,7 @@ export interface Settings {
   customWordMinVotes: number
   isPublic: boolean
   lang: Language
+  isFoolMode: boolean
 }
 
 export type ChangeableSettings = Omit<Settings, 'lang' | 'octopusAmount'>

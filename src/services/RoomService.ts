@@ -83,6 +83,7 @@ class RoomService {
     roomRepository.removePlayer(room, player.id)
     player.roomId = null
     this.updatePlayers(room.id)
+    this.updateSettings(room.id)
 
     chatService.addSystemChatMessage(room.id, 'player_left', { name: player.name })
   }

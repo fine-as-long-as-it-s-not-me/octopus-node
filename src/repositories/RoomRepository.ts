@@ -50,7 +50,16 @@ class RoomRepository extends BaseRepository<RoomData> {
     room.players.push(player)
     if (room.players.length === 1) room.hostId = player.id
 
+    this.updateOctopusAmount(roomId)
+
     return true
+  }
+
+  private updateOctopusAmount(roomId: number): void {
+    const room = this.findById(roomId)
+    if (!room) throw ROOM_NOT_FOUND_ERROR
+
+    room.settings.octopusAmount = 1 + Math.floor(room.players.length / 5)
   }
 
   removePlayer(room: RoomData, playerId: number): void {
@@ -60,7 +69,10 @@ class RoomRepository extends BaseRepository<RoomData> {
     room.players = room.players.filter((p) => p.id !== playerId)
 
     if (room.players.length === 0) this.delete(room.id)
-    else if (room.hostId === playerId) room.hostId = room.players[0].id
+    else {
+      if (room.hostId === playerId) room.hostId = room.players[0].id
+      this.updateOctopusAmount(room.id)
+    }
   }
 
   getRandomRoom(lang: Language): RoomData | undefined {

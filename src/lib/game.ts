@@ -38,17 +38,17 @@ export function getPhaseDuration(phase: Phase, room: RoomData): number {
     case Phase.DRAWING:
       return room.players.length * room.settings.drawingTime
     case Phase.DISCUSSION:
-      return 30
+      return room.players.length * 5 + 30
     case Phase.VOTING:
-      return 20
+      return 15
     case Phase.VOTE_RESULT:
-      return 15
+      return 12
     case Phase.GUESSING:
-      return 30
-    case Phase.ROUND_RESULT:
-      return 15
-    case Phase.GAME_RESULT:
       return 20
+    case Phase.ROUND_RESULT:
+      return 8
+    case Phase.GAME_RESULT:
+      return 10
     case Phase.END:
       return 0
     default:
