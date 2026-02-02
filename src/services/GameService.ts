@@ -126,9 +126,11 @@ class GameService {
     const room = roomRepository.findById(game.roomId)
     if (!room) return
 
+    const isFoolMode = room.settings.isFoolMode
+
     room.players.forEach((player) => {
       const isOctopus = game.octopuses.some((octopusUUID) => octopusUUID === player.UUID)
-      const wordToShow = isOctopus ? game.fakeWord : game.keyword
+      const wordToShow = isOctopus ? (isFoolMode ? game.fakeWord : '') : game.keyword
 
       playerService.sendMessage(player.id, 'keyword', {
         keyword: wordToShow,
@@ -286,8 +288,6 @@ class GameService {
     if (game.phase !== Phase.GUESSING) return
 
     if (!game.octopuses.includes(player.UUID)) return
-
-    console.log(word, game.keyword)
 
     const isCorrect = normalizeString(word) === normalizeString(game.keyword)
     game.guessedWord = isCorrect

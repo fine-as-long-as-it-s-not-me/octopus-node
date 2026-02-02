@@ -84,11 +84,12 @@ class GameRepository extends BaseRepository<GameData> {
       const customWordsArray = Array.from(room.customWords)
 
       const i1 = Math.floor(Math.random() * customWordsArray.length)
+      keyword = customWordsArray[i1][0]
+
       let i2
       while (i1 === (i2 = Math.floor(Math.random() * customWordsArray.length))) {}
 
       category = 'custom'
-      keyword = customWordsArray[i1][0]
       fakeWord = customWordsArray[i2][0]
     } else {
       const lang: Language = room.settings.lang
@@ -96,9 +97,6 @@ class GameRepository extends BaseRepository<GameData> {
       const categories = Object.keys(keywords)
       category = categories[Math.floor(Math.random() * categories.length)]
       const wordList = keywords[category as keyof typeof keywords][lang]
-
-      console.log(categories, category, lang)
-      console.log('wordList:', wordList)
 
       const i1 = Math.floor(Math.random() * wordList.length)
       let i2
