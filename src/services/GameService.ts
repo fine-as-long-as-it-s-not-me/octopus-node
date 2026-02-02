@@ -183,6 +183,7 @@ class GameService {
       if (count > topVote) {
         topVote = count
         topVotes = [UUID]
+        if (count >= room.players.length - game.octopuses.length) game.isUnanimity = true
       } else if (count === topVote) {
         topVotes.push(UUID)
       }
@@ -198,7 +199,7 @@ class GameService {
       } else {
         // 라이어를 못 맞춘 경우
         game.foundOctopus = false
-        game.winningTeam = Team.SQUID
+        game.winningTeam = Team.OCTOPUS
       }
     } else {
       // 동점인 경우
@@ -228,7 +229,9 @@ class GameService {
     })
   }
 
-  startGuessingPhase(game: GameData): void {}
+  startGuessingPhase(game: GameData): void {
+    game.winningTeam = Team.SQUID
+  }
 
   startRoundResultPhase(game: GameData): void {
     // 점수 집계 단계
@@ -244,6 +247,7 @@ class GameService {
       tied: game.didVoteTie,
       guessed: game.guessedWord,
       isUnanimity: game.isUnanimity,
+      winningTeam: game.winningTeam,
     })
   }
 
