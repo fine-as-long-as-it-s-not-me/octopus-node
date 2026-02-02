@@ -69,7 +69,7 @@ export const roomHandlers: SubTypeHandlerMap<RoomHandlerRequestMap> = {
 
     // Validate keyword
     const trimmedKeyword = keyword.trim()
-    
+
     // Check if keyword is empty or only whitespace
     if (!trimmedKeyword) {
       throw INVALID_KEYWORD_EMPTY_ERROR
@@ -81,12 +81,14 @@ export const roomHandlers: SubTypeHandlerMap<RoomHandlerRequestMap> = {
     }
 
     // Use sanitized keyword (trimmed)
-    // Note: After trimming, duplicate keywords (e.g., "test" and " test ") 
+    // Note: After trimming, duplicate keywords (e.g., "test" and " test ")
     // will correctly map to the same entry and increment the same vote count
     roomService.voteCustomWord(socket, trimmedKeyword)
   },
   delete_keyword(socket, data: RoomDeleteKeywordRequest) {
     // 등록된 커스텀 제시어 제거
+    const { keyword } = data
+    roomService.deleteCustomWord(socket, keyword)
   },
   change_settings(socket, data: RoomSettingsUpdatedRequest) {
     // 설정 변경

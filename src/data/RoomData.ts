@@ -10,7 +10,7 @@ class RoomData {
   code: string
   settings: Settings
   players: PlayerData[] = []
-  customWords = new Map<string, number>()
+  customWords = new Map<string, Set<string>>()
   hostId: number | null = null
   game: GameData | null = null
 
