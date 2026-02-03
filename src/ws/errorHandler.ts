@@ -9,7 +9,10 @@ export const errorHandlers: Record<string, (socket: WebSocket) => void> = {
   PLAYER_NOT_IN_ROOM: (socket) => {
     // Handle player not in room error
     console.error('Player is not in a room.')
-    sendSocketMessage(socket, 'error', { message: 'Player is not in a room.', cause: '    //' })
+    sendSocketMessage(socket, 'error', {
+      message: 'Player is not in a room.',
+      cause: 'PLAYER_NOT_IN_ROOM',
+    })
   },
   PLAYER_UNREGISTERED: (socket) => {
     console.error('Player is unregistered.')

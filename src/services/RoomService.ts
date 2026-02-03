@@ -188,6 +188,7 @@ class RoomService {
       playerService.sendMessage(player.id, 'error', {
         message: 'You have already voted for this word.',
       })
+      return
     }
 
     roomRepository.voteCustomKeyword(room.id, keyword, player.UUID)
@@ -231,6 +232,7 @@ class RoomService {
       sendSocketMessage(socket, 'error', {
         message: 'You have already voted for this word.',
       })
+      return
     }
 
     roomRepository.voteCustomKeyword(room.id, trimmedKeyword, UUID)

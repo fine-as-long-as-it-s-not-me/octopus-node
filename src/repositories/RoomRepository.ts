@@ -128,6 +128,12 @@ class RoomRepository extends BaseRepository<RoomData> {
     if (!room) throw ROOM_NOT_FOUND_ERROR
 
     room.anonymousPlayers.push(socket)
+
+    socket.on('close', () => {
+      const currentRoom = this.findById(roomId)
+      if (!currentRoom) return
+      currentRoom.anonymousPlayers = currentRoom.anonymousPlayers.filter((s) => s !== socket)
+    })
   }
 }
 
