@@ -1,3 +1,4 @@
+import { WebSocket } from 'ws'
 import { PlayerData } from '../data/PlayerData'
 import { RoomData } from '../data/RoomData'
 import { Language, Settings } from '../data/types'
@@ -62,16 +63,19 @@ class RoomRepository extends BaseRepository<RoomData> {
     room.settings.octopusAmount = 1 + Math.floor(room.players.length / 5)
   }
 
-  removePlayer(room: RoomData, playerId: number): void {
+  removePlayer(room: RoomData, playerId: number): boolean {
     const player = room.players.find((p) => p.id === playerId)
     if (!player) throw ROOM_PLAYER_NOT_FOUND_ERROR
 
     room.players = room.players.filter((p) => p.id !== playerId)
 
-    if (room.players.length === 0) this.delete(room.id)
-    else {
+    if (room.players.length === 0) {
+      this.delete(room.id)
+      return false
+    } else {
       if (room.hostId === playerId) room.hostId = room.players[0].id
       this.updateOctopusAmount(room.id)
+      return true
     }
   }
 
@@ -84,40 +88,46 @@ class RoomRepository extends BaseRepository<RoomData> {
     return publicRooms[randomIndex]
   }
 
-  getRegisteredCustomWords(roomId: number): [string, Set<string>][] {
+  getRegisteredCustomKeywords(roomId: number): [string, Set<string>][] {
     const room = this.findById(roomId)
     if (!room) throw ROOM_NOT_FOUND_ERROR
 
-    return Array.from(room.customWords.entries())
+    return Array.from(room.customKeywords.entries())
   }
 
-  voteCustomWord(roomId: number, keyword: string, playerUUID: string): void {
+  voteCustomKeyword(roomId: number, keyword: string, playerUUID: string): void {
     const room = this.findById(roomId)
     if (!room) throw ROOM_NOT_FOUND_ERROR
 
-    if (!room.customWords.has(keyword)) {
-      room.customWords.set(keyword, new Set())
+    if (!room.customKeywords.has(keyword)) {
+      room.customKeywords.set(keyword, new Set())
     }
-    const currentVotes = room.customWords.get(keyword) || new Set()
+    const currentVotes = room.customKeywords.get(keyword) || new Set()
     currentVotes.add(playerUUID)
-    room.customWords.set(keyword, currentVotes)
+    room.customKeywords.set(keyword, currentVotes)
   }
 
-  deleteCustomWord(roomId: number, keyword: string): void {
+  deleteCustomKeyword(roomId: number, keyword: string): void {
     const room = this.findById(roomId)
     if (!room) throw ROOM_NOT_FOUND_ERROR
 
-    room.customWords.delete(keyword)
+    room.customKeywords.delete(keyword)
   }
 
-  hasPlayerVotedCustomWord(roomId: number, keyword: string, playerUUID: string): boolean {
+  hasPlayerVotedCustomKeyword(roomId: number, keyword: string, playerUUID: string): boolean {
     const room = this.findById(roomId)
     if (!room) throw ROOM_NOT_FOUND_ERROR
 
-    const voters = room.customWords.get(keyword)
+    const voters = room.customKeywords.get(keyword)
     if (!voters) return false
 
     return voters.has(playerUUID)
+  }
+  addAnonymousPlayer(roomId: number, socket: WebSocket): void {
+    const room = this.findById(roomId)
+    if (!room) throw ROOM_NOT_FOUND_ERROR
+
+    room.anonymousPlayers.push(socket)
   }
 }
 

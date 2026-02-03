@@ -1,6 +1,7 @@
+import { WebSocket } from 'ws'
 import { GameData } from './GameData'
 import { PlayerData } from './PlayerData'
-import { Language, Settings } from './types'
+import { Settings } from './types'
 
 class RoomData {
   static nextId = 1
@@ -10,7 +11,8 @@ class RoomData {
   code: string
   settings: Settings
   players: PlayerData[] = []
-  customWords = new Map<string, Set<string>>()
+  anonymousPlayers: WebSocket[] = []
+  customKeywords = new Map<string, Set<string>>()
   hostId: number | null = null
   game: GameData | null = null
 

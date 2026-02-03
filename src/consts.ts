@@ -6,9 +6,9 @@ export const DEFAULT_SETTING: Omit<Settings, 'lang'> = {
   maxPlayers: 8,
   octopusAmount: 1,
   drawingTime: 15,
-  useCustomWord: false,
-  isCustomWordVoteOpen: false,
-  customWordMinVotes: 2,
+  useCustomKeyword: false,
+  isCustomKeywordVoteOpen: false,
+  customKeywordMinVotes: 2,
   isPublic: true,
   isFoolMode: false,
 }

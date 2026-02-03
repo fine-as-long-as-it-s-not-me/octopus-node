@@ -26,6 +26,14 @@ class PlayerService {
     return player
   }
 
+  logout(socket: WebSocket): void {
+    const player = playerRepository.findBySocket(socket)
+    if (!player) throw PLAYER_UNREGISTERED_ERROR
+
+    playerRepository.logout(player.id)
+    this.sendMessage(player.id, 'player_logged_out', {})
+  }
+
   sendMessage(playerId: number, type: string, data: any): void {
     const player = playerRepository.findById(playerId)
     if (!player) return console.error(`Player with ID ${playerId} not found`)
@@ -35,6 +43,13 @@ class PlayerService {
         if (player.socket.readyState === WebSocket.CLOSED) playerRepository.logout(player.id)
       }
     })
+  }
+
+  pong(socket: WebSocket): void {
+    const player = playerRepository.findBySocket(socket)
+    if (!player) throw PLAYER_UNREGISTERED_ERROR
+
+    this.sendMessage(player.id, 'pong', {})
   }
 }
 
