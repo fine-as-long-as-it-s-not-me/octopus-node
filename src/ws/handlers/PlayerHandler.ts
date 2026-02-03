@@ -11,6 +11,8 @@ type PlayerRegisterHandler = {
 type PlayerHandlerHandlerMap = {
   login: PlayerRegisterHandler
   change_language: { lang: Language }
+  logout: undefined
+  ping: undefined
 }
 
 export const playerHandlers: SubTypeHandlerMap<PlayerHandlerHandlerMap> = {
@@ -18,8 +20,14 @@ export const playerHandlers: SubTypeHandlerMap<PlayerHandlerHandlerMap> = {
     const { UUID, name, lang } = data
     playerService.login(socket, UUID, name, lang)
   },
+  logout(socket) {
+    playerService.logout(socket)
+  },
   change_language(socket, data: { lang: Language }) {
     const { lang } = data
     playerService.changeLanguage(socket, lang)
+  },
+  ping(socket) {
+    playerService.pong(socket)
   },
 }

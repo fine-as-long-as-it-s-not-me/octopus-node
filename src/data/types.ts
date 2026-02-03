@@ -13,9 +13,9 @@ export interface Settings {
   maxPlayers: number
   octopusAmount: number
   drawingTime: number
-  useCustomWord: boolean
-  isCustomWordVoteOpen: boolean
-  customWordMinVotes: number
+  useCustomKeyword: boolean
+  isCustomKeywordVoteOpen: boolean
+  customKeywordMinVotes: number
   isPublic: boolean
   lang: Language
   isFoolMode: boolean
