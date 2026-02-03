@@ -38,6 +38,13 @@ export const INVALID_KEYWORD_EMPTY_ERROR = new Error('Keyword cannot be empty or
   cause: 'INVALID_KEYWORD_EMPTY',
 })
 
-export const INVALID_KEYWORD_TOO_LONG_ERROR = new Error('Keyword exceeds maximum length of 50 characters', {
-  cause: 'INVALID_KEYWORD_TOO_LONG',
+export const INVALID_KEYWORD_TOO_LONG_ERROR = new Error(
+  'Keyword exceeds maximum length of 50 characters',
+  {
+    cause: 'INVALID_KEYWORD_TOO_LONG',
+  },
+)
+
+export const NO_ACCESS_TO_PRIVATE_ROOM_ERROR = new Error('No access to private room', {
+  cause: 'NO_ACCESS_TO_PRIVATE_ROOM',
 })

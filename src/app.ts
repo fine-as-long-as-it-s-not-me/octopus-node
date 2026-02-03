@@ -15,9 +15,12 @@ app.get('/', (req, res) => {
 })
 
 wss.on('connection', (socket) => {
+  console.log('New client connected')
   socket.on('message', (rawMessage) => {
     try {
       const { mainType, subType, data } = JSON.parse(rawMessage.toString())
+
+      console.log(`Received message: ${mainType} - ${subType}`, data)
 
       handlers[mainType][subType](socket, data)
     } catch (error) {
@@ -25,7 +28,7 @@ wss.on('connection', (socket) => {
       if (error instanceof Error) {
         const cause = (error.cause as keyof typeof errorHandlers) || 'INTERNAL_ERROR'
         const handler = errorHandlers[cause] ?? errorHandlers.INTERNAL_ERROR
-        handler()
+        handler(socket)
       }
     }
   })

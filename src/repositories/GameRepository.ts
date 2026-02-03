@@ -79,18 +79,18 @@ class GameRepository extends BaseRepository<GameData> {
   getWords(room: RoomData): { category: string; keyword: string; fakeWord: string } {
     let category: string, keyword: string, fakeWord: string
 
-    if (room.settings.useCustomWord && room.customWords.size >= 2) {
+    if (room.settings.useCustomKeyword && room.customKeywords.size >= 2) {
       // 커스텀 단어 사용
-      const customWordsArray = Array.from(room.customWords)
+      const customKeywordsArray = Array.from(room.customKeywords)
 
-      const i1 = Math.floor(Math.random() * customWordsArray.length)
-      keyword = customWordsArray[i1][0]
+      const i1 = Math.floor(Math.random() * customKeywordsArray.length)
+      keyword = customKeywordsArray[i1][0]
 
       let i2
-      while (i1 === (i2 = Math.floor(Math.random() * customWordsArray.length))) {}
+      while (i1 === (i2 = Math.floor(Math.random() * customKeywordsArray.length))) {}
 
       category = 'custom'
-      fakeWord = customWordsArray[i2][0]
+      fakeWord = customKeywordsArray[i2][0]
     } else {
       const lang: Language = room.settings.lang
       // 카테고리에 따른 단어 선택

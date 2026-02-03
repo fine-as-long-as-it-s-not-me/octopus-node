@@ -44,7 +44,7 @@ class PlayerRepository extends BaseRepository<PlayerData> {
     if (player.heartbeatInterval) clearInterval(player.heartbeatInterval)
     if (player.roomId) {
       const room = roomRepository.findById(player.roomId)
-      if (room) roomService.join(room.code, socket, player.UUID)
+      if (room) roomService.join(socket, room.code, player.UUID)
     }
     player.heartbeatInterval = this.getHeartbeatInterval(player.socket)
   }
@@ -56,12 +56,11 @@ class PlayerRepository extends BaseRepository<PlayerData> {
     clearInterval(player.heartbeatInterval)
 
     console.log(`Player logged out: ${player.name} (${player.UUID})`)
-
     if (player.roomId) {
       const room = roomRepository.findById(player.roomId)
       if (room) {
         try {
-          roomRepository.removePlayer(room, player.id)
+          roomService.leave(room.code, player.socket)
         } catch (error) {
           console.error('Failed to remove player from room during logout:', error)
         }
