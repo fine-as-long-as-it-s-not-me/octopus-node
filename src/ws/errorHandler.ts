@@ -139,4 +139,11 @@ export const errorHandlers: Record<string, (socket: WebSocket) => void> = {
       cause: 'NO_ACCESS_TO_PRIVATE_ROOM',
     })
   },
+  ONLY_HOST_CAN_KICK: (socket) => {
+    console.error('Only the host can kick players.')
+    sendSocketMessage(socket, 'error', {
+      message: 'Only the host can kick players.',
+      cause: 'ONLY_HOST_CAN_KICK',
+    })
+  },
 }

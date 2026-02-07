@@ -41,6 +41,10 @@ type RoomCreateRequest = {
   settings: ChangeableSettings
 }
 
+type RoomKickPlayerRequest = {
+  targetUUID: string
+}
+
 type RoomHandlerRequestMap = {
   join: RoomJoinRequest
   leave: RoomLeaveRequest
@@ -52,6 +56,7 @@ type RoomHandlerRequestMap = {
   join_random: RoomRandomJoinRequest
   join_private: RoomJoinRequest
   join_anonymous: RoomAnonymousJoinRequest
+  kick_player: RoomKickPlayerRequest
 }
 
 export const roomHandlers: SubTypeHandlerMap<RoomHandlerRequestMap> = {
@@ -129,5 +134,9 @@ export const roomHandlers: SubTypeHandlerMap<RoomHandlerRequestMap> = {
     // 설정 변경
     const { settings } = data
     roomService.changeSettings(socket, settings)
+  },
+  kick_player(socket, data: { targetUUID: string }) {
+    const { targetUUID } = data
+    roomService.kickPlayer(socket, targetUUID)
   },
 }
