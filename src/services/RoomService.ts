@@ -252,6 +252,7 @@ class RoomService {
 
     roomRepository.removePlayer(room, targetPlayer.id)
     this.updatePlayers(room.id)
+    this.updateSettings(room.id)
 
     playerService.sendMessage(targetPlayer.id, 'kicked', {})
     chatService.addSystemChatMessage(room.id, 'player_kicked', { name: targetPlayer.name })
