@@ -48,3 +48,7 @@ export const INVALID_KEYWORD_TOO_LONG_ERROR = new Error(
 export const NO_ACCESS_TO_PRIVATE_ROOM_ERROR = new Error('No access to private room', {
   cause: 'NO_ACCESS_TO_PRIVATE_ROOM',
 })
+
+export const ONLY_HOST_CAN_KICK_ERROR = new Error('Only the host can kick players', {
+  cause: 'ONLY_HOST_CAN_KICK',
+})

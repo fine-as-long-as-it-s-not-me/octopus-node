@@ -11,6 +11,7 @@ import {
   CUSTOM_WORD_VOTE_CLOSED_ERROR,
   NO_ACCESS_TO_PRIVATE_ROOM_ERROR,
   ONLY_HOST_CAN_CHANGE_SETTINGS_ERROR,
+  ONLY_HOST_CAN_KICK_ERROR,
   ROOM_HOST_NOT_FOUND_ERROR,
   ROOM_NOT_FOUND_ERROR,
   ROOM_PLAYER_NOT_FOUND_ERROR,
@@ -56,8 +57,6 @@ class RoomService {
     if (!room) {
       this.createRoom(socket, undefined, code)
     } else {
-      if (!room.settings.isPublic) throw NO_ACCESS_TO_PRIVATE_ROOM_ERROR
-
       roomRepository.addPlayer(room.id, player)
 
       chatService.addSystemChatMessage(room.id, 'player_joined', { name: player.name })
@@ -100,8 +99,6 @@ class RoomService {
     if (!player) throw ROOM_PLAYER_NOT_FOUND_ERROR
 
     const isRoomAlive = roomRepository.removePlayer(room, player.id)
-
-    player.roomId = null
 
     if (!isRoomAlive) return
 
@@ -238,6 +235,27 @@ class RoomService {
     roomRepository.voteCustomKeyword(room.id, trimmedKeyword, UUID)
 
     this.updateCustomKeywords(room.id)
+  }
+
+  kickPlayer(socket: WebSocket, targetUUID: string): void {
+    const player = playerRepository.findBySocket(socket)
+    if (!player) throw PLAYER_UNREGISTERED_ERROR
+    if (!player.roomId) throw PLAYER_NOT_IN_ROOM_ERROR
+
+    const room = roomRepository.findById(player.roomId)
+    if (!room) throw ROOM_NOT_FOUND_ERROR
+
+    if (room.hostId !== player.id) throw ONLY_HOST_CAN_KICK_ERROR
+
+    const targetPlayer = room.players.find((p) => p.UUID === targetUUID)
+    if (!targetPlayer) throw ROOM_PLAYER_NOT_FOUND_ERROR
+
+    roomRepository.removePlayer(room, targetPlayer.id)
+    this.updatePlayers(room.id)
+    this.updateSettings(room.id)
+
+    playerService.sendMessage(targetPlayer.id, 'kicked', {})
+    chatService.addSystemChatMessage(room.id, 'player_kicked', { name: targetPlayer.name })
   }
 }
 

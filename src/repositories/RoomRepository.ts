@@ -68,6 +68,7 @@ class RoomRepository extends BaseRepository<RoomData> {
     if (!player) throw ROOM_PLAYER_NOT_FOUND_ERROR
 
     room.players = room.players.filter((p) => p.id !== playerId)
+    player.roomId = null
 
     if (room.players.length === 0) {
       this.delete(room.id)
