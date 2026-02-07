@@ -135,7 +135,7 @@ export const roomHandlers: SubTypeHandlerMap<RoomHandlerRequestMap> = {
     const { settings } = data
     roomService.changeSettings(socket, settings)
   },
-  kick_player(socket, data: { targetUUID: string }) {
+  kick_player(socket, data: RoomKickPlayerRequest) {
     const { targetUUID } = data
     roomService.kickPlayer(socket, targetUUID)
   },
