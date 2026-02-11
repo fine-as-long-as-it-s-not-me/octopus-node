@@ -53,6 +53,6 @@ export const ONLY_HOST_CAN_KICK_ERROR = new Error('Only the host can kick player
   cause: 'ONLY_HOST_CAN_KICK',
 })
 
-export const ROOM_NOT_CONFIGUREABLE_ERROR = new Error('Room is not configureable at this time', {
-  cause: 'ROOM_NOT_CONFIGUREABLE',
+export const ROOM_NOT_CONFIGURABLE_ERROR = new Error('Room is not configurable at this time', {
+  cause: 'ROOM_NOT_CONFIGURABLE',
 })

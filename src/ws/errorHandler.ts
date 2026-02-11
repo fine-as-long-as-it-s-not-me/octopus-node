@@ -146,11 +146,11 @@ export const errorHandlers: Record<string, (socket: WebSocket) => void> = {
       cause: 'ONLY_HOST_CAN_KICK',
     })
   },
-  ROOM_NOT_CONFIGUREABLE: (socket) => {
-    console.error('Room is currently not configureable.')
+  ROOM_NOT_CONFIGURABLE: (socket) => {
+    console.error('Room is currently not configurable.')
     sendSocketMessage(socket, 'error', {
-      message: 'Room is currently not configureable.',
-      cause: 'ROOM_NOT_CONFIGUREABLE',
+      message: 'Room is currently not configurable.',
+      cause: 'ROOM_NOT_CONFIGURABLE',
     })
   },
 }
