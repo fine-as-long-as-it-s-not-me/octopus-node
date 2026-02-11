@@ -52,3 +52,7 @@ export const NO_ACCESS_TO_PRIVATE_ROOM_ERROR = new Error('No access to private r
 export const ONLY_HOST_CAN_KICK_ERROR = new Error('Only the host can kick players', {
   cause: 'ONLY_HOST_CAN_KICK',
 })
+
+export const ROOM_NOT_CONFIGUREABLE_ERROR = new Error('Room is not configureable at this time', {
+  cause: 'ROOM_NOT_CONFIGUREABLE',
+})

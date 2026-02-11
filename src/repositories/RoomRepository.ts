@@ -6,6 +6,7 @@ import {
   ROOM_ADD_PLAYER_FAILED_ERROR,
   ROOM_CODE_ALREADY_EXISTS_ERROR,
   ROOM_CREATE_FAILED_ERROR,
+  ROOM_NOT_CONFIGUREABLE_ERROR,
   ROOM_NOT_FOUND_ERROR,
   ROOM_PLAYER_NOT_FOUND_ERROR,
 } from '../errors/room'
@@ -99,6 +100,9 @@ class RoomRepository extends BaseRepository<RoomData> {
   voteCustomKeyword(roomId: number, keyword: string, playerUUID: string): void {
     const room = this.findById(roomId)
     if (!room) throw ROOM_NOT_FOUND_ERROR
+
+    const game = room.game
+    if (game) throw ROOM_NOT_CONFIGUREABLE_ERROR
 
     if (!room.customKeywords.has(keyword)) {
       room.customKeywords.set(keyword, new Set())
